@@ -47,12 +47,13 @@ class PdfDeviceImportTest {
                 drawText(line, 90f, 200f + i * 110f, paint)
             }
         }
-        PdfDocument().use { doc ->
+        val doc = PdfDocument()
+        try {
             val page = doc.startPage(PdfDocument.PageInfo.Builder(600, 800, 1).create())
             page.canvas.drawBitmap(bitmap, null, android.graphics.Rect(0, 0, 600, 800), null)
             doc.finishPage(page)
             scan.outputStream().use { doc.writeTo(it) }
-        }
+        } finally { doc.close() }
         bitmap.recycle()
         val vm = ViewModelProvider(activity, PdfImportViewModelFactory(app))[PdfImportViewModel::class.java]
         compose.runOnUiThread {

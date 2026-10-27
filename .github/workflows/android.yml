@@ -31,7 +31,7 @@ jobs:
       - name: Install Android SDK components
         run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"'
       - name: Run tests and check release compilation
-        run: ./gradlew --no-daemon --max-workers=2 --stacktrace :app:testDebugUnitTest :app:assembleRelease
+        run: ./gradlew --no-daemon --max-workers=2 --stacktrace :app:testDebugUnitTest :app:assembleRelease :app:assembleDebugAndroidTest
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
