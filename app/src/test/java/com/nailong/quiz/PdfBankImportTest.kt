@@ -22,6 +22,7 @@ class PdfBankImportTest {
     @Test fun `new bank survives reload and switching keeps existing data`() = runBlocking {
         val app = RuntimeEnvironment.getApplication() as NailongApp
         app.activateBank(BuiltInBank.DANGZHANG.id)
+        val previousRecords = app.repository.totalAnswers()
         val existing = app.repository.allQuestions().first()
         app.repository.recordAnswer(existing, true, existing.answer, "SEQUENTIAL", 2)
         val questions = PdfQuestionParser.parse(listOf(PdfTextPage(1,
@@ -39,7 +40,7 @@ class PdfBankImportTest {
         assertEquals(7, app.settingsRepo.seqIndex.first())
         app.activateBank(BuiltInBank.DANGZHANG.id)
         assertEquals(357, app.repository.questionCount())
-        assertEquals(1, app.repository.totalAnswers())
+        assertEquals(previousRecords + 1, app.repository.totalAnswers())
     }
 
     @Test fun `duplicate PDF and invalid question cannot create a bank`() = runBlocking {
