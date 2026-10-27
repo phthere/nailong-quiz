@@ -66,8 +66,8 @@ class SettingsRepository(private val context: Context) {
     }
 
     val seqIndex: Flow<Int> = context.dataStore.data.map { p ->
-        val bank = BuiltInBank.fromId(p[K.SELECTED_BANK] ?: BuiltInBank.DEFAULT.id)
-        p[intPreferencesKey("seq_index_${bank.id}")] ?: 0
+        val bankId = p[K.SELECTED_BANK] ?: BuiltInBank.DEFAULT.id
+        p[intPreferencesKey("seq_index_$bankId")] ?: 0
     }
 
     suspend fun saveSeqIndex(index: Int, bankId: Int) {
@@ -76,7 +76,7 @@ class SettingsRepository(private val context: Context) {
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
         AppSettings(
-            selectedBank = BuiltInBank.fromId(p[K.SELECTED_BANK] ?: BuiltInBank.DEFAULT.id).id,
+            selectedBank = (p[K.SELECTED_BANK] ?: BuiltInBank.DEFAULT.id),
             themeBg = ThemeBg.fromKey(p[K.THEME_BG] ?: ThemeBg.CLOUD.key),
             darkMode = runCatching { DarkMode.valueOf(p[K.DARK_MODE] ?: "SYSTEM") }.getOrDefault(DarkMode.SYSTEM),
             bgBlur = p[K.BG_BLUR] ?: 0f,
@@ -98,7 +98,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun update(transform: (AppSettings) -> AppSettings) {
         context.dataStore.edit { p ->
             val cur = AppSettings(
-                selectedBank = BuiltInBank.fromId(p[K.SELECTED_BANK] ?: BuiltInBank.DEFAULT.id).id,
+                selectedBank = (p[K.SELECTED_BANK] ?: BuiltInBank.DEFAULT.id),
             themeBg = ThemeBg.fromKey(p[K.THEME_BG] ?: ThemeBg.CLOUD.key),
                 darkMode = runCatching { DarkMode.valueOf(p[K.DARK_MODE] ?: "SYSTEM") }.getOrDefault(DarkMode.SYSTEM),
                 bgBlur = p[K.BG_BLUR] ?: 0f,
@@ -116,7 +116,7 @@ class SettingsRepository(private val context: Context) {
                 dailyGoal = p[K.DAILY_GOAL] ?: 30
             )
             val n = transform(cur)
-            p[K.SELECTED_BANK] = BuiltInBank.fromId(n.selectedBank).id
+            p[K.SELECTED_BANK] = n.selectedBank
             p[K.THEME_BG] = n.themeBg.key
             p[K.DARK_MODE] = n.darkMode.name
             p[K.BG_BLUR] = n.bgBlur

@@ -15,7 +15,7 @@ class QuizRepository(
     private val context: Context,
     val db: AppDatabase,
     val settingsRepo: SettingsRepository,
-    val bank: BuiltInBank
+    val bank: QuizBank
 ) {
     private val importer = QuestionImporter(context, db, bank)
 

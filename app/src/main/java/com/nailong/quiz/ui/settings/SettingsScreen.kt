@@ -32,6 +32,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +61,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(app: NailongApp, settings: AppSettings, nav: NavHostController) {
     val scope = rememberCoroutineScope()
+    val banks by app.bankCatalog.banks.collectAsState()
     var total by remember { mutableStateOf(0) }
     var message by remember { mutableStateOf<String?>(null) }
     var confirmAction by remember { mutableStateOf<PendingAction?>(null) }
@@ -175,9 +177,11 @@ fun SettingsScreen(app: NailongApp, settings: AppSettings, nav: NavHostControlle
             GlassCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("数据管理", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    OutlinedButton(onClick = { nav.navigate(com.nailong.quiz.ui.nav.Routes.PDF_IMPORT) }, modifier = Modifier.fillMaxWidth()) { Text("从 PDF 新建题库") }
+                    Text("选择 PDF，识别并核对题目后保存。支持文字版和扫描版。", style = MaterialTheme.typography.bodySmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedButton(onClick = { exportLauncher.launch("nailong_backup.json") }, modifier = Modifier.weight(1f)) { Text("备份当前题库") }
-                        OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }, modifier = Modifier.weight(1f)) { Text("恢复当前题库") }
+                        OutlinedButton(onClick = { exportLauncher.launch("nailong_backup.json") }, modifier = Modifier.weight(1f)) { Text("备份学习记录") }
+                        OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }, modifier = Modifier.weight(1f)) { Text("恢复学习记录") }
                     }
                     DangerButton("重置学习进度") { confirmAction = PendingAction.RESET_PROGRESS }
                     DangerButton("清空错题记录") { confirmAction = PendingAction.CLEAR_WRONG }
@@ -191,7 +195,7 @@ fun SettingsScreen(app: NailongApp, settings: AppSettings, nav: NavHostControlle
                     Text("关于软件", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text("奶龙刷题", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                     Text(app.repository.bank.title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("版本 ${BuildConfig.VERSION_NAME}（${BuildConfig.VERSION_CODE}）· 内置 3 套题库 · 当前 $total 题", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("版本 ${BuildConfig.VERSION_NAME}（${BuildConfig.VERSION_CODE}）· 共 ${banks.size} 套题库 · 当前 $total 题", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("完全离线运行 · 数据仅保存在本机", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

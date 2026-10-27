@@ -29,7 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         private val instances = mutableMapOf<Int, AppDatabase>()
 
-        fun get(context: Context, bank: BuiltInBank): AppDatabase = synchronized(this) {
+        fun get(context: Context, bank: QuizBank): AppDatabase = synchronized(this) {
             instances.getOrPut(bank.id) {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, bank.databaseName)
                     .build()

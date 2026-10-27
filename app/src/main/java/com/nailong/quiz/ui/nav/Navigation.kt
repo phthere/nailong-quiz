@@ -52,6 +52,7 @@ object Routes {
     const val EXAM_HISTORY = "exam_history"
     const val SEARCH = "search"
     const val FAVORITES = "favorites"
+    const val PDF_IMPORT = "pdf_import"
     const val SPRINT = "sprint"
 
     fun practiceSetup(mode: String) = "practice_setup/$mode"
@@ -110,6 +111,7 @@ fun AppNav(app: NailongApp, settings: AppSettings) {
             composable(Routes.WRONG) { WrongBookScreen(app, settings, nav) }
             composable(Routes.STATS) { StatsScreen(app, settings, nav) }
             composable(Routes.MINE) { SettingsScreen(app, settings, nav) }
+            composable(Routes.PDF_IMPORT) { com.nailong.quiz.ui.settings.PdfImportScreen(app, settings, nav) }
             composable(Routes.PRACTICE_SETUP) { back ->
                 val mode = back.arguments?.getString("mode") ?: "sequential"
                 PracticeSetupScreen(app, settings, nav, mode)

@@ -32,21 +32,29 @@ object Jsons {
     val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 }
 
-class QuestionImporter(private val context: Context, private val db: AppDatabase, private val bank: BuiltInBank) {
+class QuestionImporter(private val context: Context, private val db: AppDatabase, private val bank: QuizBank) {
+
+    private fun readBank(): QuestionBankJson {
+        val text = when (val selected = bank) {
+            is BuiltInBank -> context.assets.open(selected.assetFile).bufferedReader().use { it.readText() }
+            is ImportedBank -> BankCatalog.questionFile(context, selected.id).readText()
+            else -> error("不支持的题库")
+        }
+        return Jsons.json.decodeFromString<QuestionBankJson>(text)
+    }
 
     /** 若数据库为空则从 assets 导入题库，返回导入数量 */
     suspend fun importIfNeeded(): Int = withContext(Dispatchers.IO) {
         if (db.questionDao().count() > 0) return@withContext db.questionDao().count()
-        val text = context.assets.open(bank.assetFile).bufferedReader().use { it.readText() }
-        val bank = Jsons.json.decodeFromString<QuestionBankJson>(text)
-        db.questionDao().insertAll(bank.questions.map { it.toEntity() })
-        bank.questions.size
+        val data = readBank()
+        require(data.count == data.questions.size && data.count > 0) { "题库内容不完整" }
+        db.questionDao().insertAll(data.questions.map { it.toEntity() })
+        data.questions.size
     }
 
     suspend fun bankInfo(): Pair<Int, Int> = withContext(Dispatchers.IO) {
-        val text = context.assets.open(bank.assetFile).bufferedReader().use { it.readText() }
-        val bank = Jsons.json.decodeFromString<QuestionBankJson>(text)
-        bank.version to bank.count
+        val data = readBank()
+        data.version to data.count
     }
 }
 

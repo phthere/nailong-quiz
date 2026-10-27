@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             if (bankError == null) CircularProgressIndicator()
-                            Text(bankError ?: "正在加载内置题库…")
+                            Text(bankError ?: "正在加载题库…")
                         }
                     }
                 }

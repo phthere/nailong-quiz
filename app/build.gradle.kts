@@ -28,8 +28,8 @@ android {
         applicationId = "com.nailong.quiz.study"
         minSdk = 26
         targetSdk = 34
-        versionCode = providers.environmentVariable("NAILONG_VERSION_CODE").orElse("12").get().toInt()
-        versionName = "1.1.1"
+        versionCode = providers.environmentVariable("NAILONG_VERSION_CODE").orElse("1005").get().toInt()
+        versionName = "1.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -112,6 +112,9 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    // The Chinese model is bundled, so scanning PDFs does not require a model download.
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.12.2")

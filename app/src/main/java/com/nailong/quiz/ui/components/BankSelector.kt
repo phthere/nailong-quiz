@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -13,6 +15,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +34,8 @@ import kotlinx.coroutines.launch
 fun BankSelector(app: NailongApp, settings: AppSettings) {
     var open by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val current = BuiltInBank.fromId(settings.selectedBank)
+    val banks by app.bankCatalog.banks.collectAsState()
+    val current = banks.firstOrNull { it.id == settings.selectedBank } ?: BuiltInBank.DEFAULT
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
             Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
@@ -50,10 +54,11 @@ fun BankSelector(app: NailongApp, settings: AppSettings) {
     if (open) {
         AlertDialog(
             onDismissRequest = { open = false },
-            title = { Text("选择内置题库") },
+            title = { Text("选择题库") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    BuiltInBank.entries.forEach { bank ->
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    app.bankCatalog.loadError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    banks.forEach { bank ->
                         OutlinedButton(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = {
