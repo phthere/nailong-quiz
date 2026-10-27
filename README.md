@@ -12,11 +12,13 @@ Android 离线刷题应用，内置党章、党史和湘潭大学原题库。顶
 
 ## 直接用 GitHub 打包
 
-每次推送到 `main` 或创建 Pull Request，GitHub Actions 会运行测试并构建开发版 APK。也可以进入仓库 **Actions → Android build → Run workflow** 手动运行。
+每次提交会先运行测试并检查 Release 编译。合并或推送到 `main` 后，正式构建会使用原签名密钥生成更新 APK。
 
-运行成功后，在该次运行页面的 **Artifacts** 中下载 `nailong-quiz-dev-apk`，解压后安装 `app-debug.apk`。测试报告保存在 `android-test-reports`。
+成功后，在运行页面的 **Artifacts** 下载 `nailong-quiz-release-apk`，解压后安装 `app-release.apk`。正式包沿用 `com.nailong.quiz.study` 和原签名；直接在已有内置题库版上选择更新即可。测试报告保存在 `android-test-reports`。
 
-开发版名称是“奶龙刷题·开发版”，应用 ID 为 `com.nailong.quiz.study.dev`，可与原来的内置题库版同时安装。开发版使用构建环境的调试签名；不同环境生成的开发版若无法相互覆盖，需要卸载旧开发版，或先配置固定的开发签名。
+正式签名需要先配置 `NAILONG_KEYSTORE_BASE64` 与 `NAILONG_STORE_PASSWORD` 两个仓库 Secrets；配置完成前不会生成可覆盖安装的正式 APK。详见[正式版升级说明](docs/正式版升级.md)。
+
+内部版本号由工作流运行次数递增，签名、包名与 APK 类型都有自动校验。私钥不会提交到仓库。
 
 ## 在电脑上开发
 
@@ -53,7 +55,7 @@ Windows 使用 `gradlew.bat`。构建产物位于 `app/build/outputs/apk/debug/a
 ./gradlew :app:assembleRelease
 ```
 
-有完整签名配置时会生成可安装的 `app/build/outputs/apk/release/app-release.apk`；没有配置时只生成未签名的 Release APK，不能直接安装。日常修改可以先使用开发版。
+本地打包时可通过 `NAILONG_VERSION_CODE` 指定高于已发布版本的内部版本号。有完整签名配置时会生成可安装的 `app/build/outputs/apk/release/app-release.apk`；没有配置时只生成未签名的 Release APK，不能直接安装。日常修改可以先使用开发版。
 
 `signing/`、`keystore.properties`、本机 SDK 路径、编译输出及密钥文件已加入忽略规则。不要将包含签名文件的原始 ZIP 直接提交到公开仓库。
 

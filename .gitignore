@@ -25,3 +25,7 @@ keystore.properties
 .env.*
 !.env.example
 
+
+# Python helper caches
+__pycache__/
+*.py[cod]

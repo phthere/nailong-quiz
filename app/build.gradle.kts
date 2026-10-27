@@ -28,8 +28,8 @@ android {
         applicationId = "com.nailong.quiz.study"
         minSdk = 26
         targetSdk = 34
-        versionCode = 11
-        versionName = "1.1.0"
+        versionCode = providers.environmentVariable("NAILONG_VERSION_CODE").orElse("12").get().toInt()
+        versionName = "1.1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -73,6 +73,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
     }
     composeOptions {

@@ -45,6 +45,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.nailong.quiz.BuildConfig
 import com.nailong.quiz.NailongApp
 import com.nailong.quiz.data.AppSettings
 import com.nailong.quiz.data.BackupManager
@@ -190,7 +191,7 @@ fun SettingsScreen(app: NailongApp, settings: AppSettings, nav: NavHostControlle
                     Text("关于软件", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text("奶龙刷题", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                     Text(app.repository.bank.title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("版本 1.1.0 · 内置 3 套题库 · 当前 $total 题", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("版本 ${BuildConfig.VERSION_NAME}（${BuildConfig.VERSION_CODE}）· 内置 3 套题库 · 当前 $total 题", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("完全离线运行 · 数据仅保存在本机", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

@@ -8,6 +8,14 @@ import java.io.File
 
 class BuiltInBanksTest {
     @Test
+    fun `database names stay compatible with the installed release`() {
+        val identity = JSONObject(File("../config/release-identity.json").readText(Charsets.UTF_8))
+        val names = identity.getJSONArray("databaseNames")
+        val expected = (0 until names.length()).map { names.getString(it) }
+        assertEquals(expected, BuiltInBank.entries.map { it.databaseName })
+    }
+
+    @Test
     fun `three banks have independent databases and complete assets`() {
         val allIds = mutableSetOf<Int>()
         val databases = mutableSetOf<String>()

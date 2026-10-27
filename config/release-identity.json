@@ -1,0 +1,10 @@
+{
+  "applicationId": "com.nailong.quiz.study",
+  "certificateSha256": "b694a1834fcae4162209da5cf692285b31c0c55a064a3d988485734aa53f1010",
+  "minimumVersionCode": 11,
+  "databaseNames": [
+    "nailong_builtin_bank_1.db",
+    "nailong_builtin_bank_2.db",
+    "nailong_builtin_bank_3.db"
+  ]
+}
