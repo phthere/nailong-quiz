@@ -80,10 +80,15 @@ class PdfDeviceImportTest {
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("识别 1 题 · 已选 1 题 · 待修正 0 题"))
         compose.waitForIdle()
         val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
-        File(app.getExternalFilesDir(null), "pdf-import-preview.png").outputStream().use {
+        val screenshotFile = File(app.getExternalFilesDir(null), "pdf-import-preview.png")
+        screenshotFile.outputStream().use {
             screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
         screenshot.recycle()
+        // connectedDebugAndroidTest may uninstall the APK; keep the proof outside its data directory.
+        val copy = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(
+            "cp ${screenshotFile.absolutePath} /data/local/tmp/nailong-pdf-import-preview.png")
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(copy).use { it.readBytes() }
         compose.onNodeWithText("确认新建题库（1 题）").assertIsEnabled().performClick()
         compose.waitUntil(30_000) { vm.state.value.savedBankId != null || vm.state.value.error != null }
         assertNull(vm.state.value.error)

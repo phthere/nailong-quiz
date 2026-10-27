@@ -37,6 +37,8 @@ def main():
         raise SystemExit("APK version code must be newer than the original release")
     if "application-debuggable" in badging:
         raise SystemExit("Expected a non-debuggable release APK")
+    if "android.permission.INTERNET" in badging:
+        raise SystemExit("Offline PDF import must not request Internet access")
     checked_output([str(tools / "zipalign"), "-c", "-p", "4", str(args.apk)])
     banks = {}
     with zipfile.ZipFile(args.apk) as archive:

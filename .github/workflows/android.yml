@@ -77,7 +77,7 @@ jobs:
           script: |
             ./gradlew --no-daemon --max-workers=2 --stacktrace :app:connectedDebugAndroidTest
             mkdir -p device-proof
-            adb pull /sdcard/Android/data/com.nailong.quiz.study.dev/files/pdf-import-preview.png device-proof/pdf-import-preview.png
+            adb pull /data/local/tmp/nailong-pdf-import-preview.png device-proof/pdf-import-preview.png || echo 'Preview screenshot unavailable; test results remain in the connected test report.'
       - name: Upload device test reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
