@@ -142,7 +142,7 @@ object PdfQuestionParser {
         }
         val fills = if (question.type == QuestionType.FILL.name && text.isNotBlank()) {
             val count = question.stem.blankSlots()
-            if (count <= 1) listOf(text) else text.split(Regex("[;；\\n]+"))
+            if (count <= 1) listOf(text.replace(Regex("\\s+"), " ")) else text.split(Regex("[;；\\n]+"))
                 .map { it.trim() }.filter { it.isNotBlank() }
         } else emptyList()
         return question.copy(answer = answer, fillAnswers = fills)

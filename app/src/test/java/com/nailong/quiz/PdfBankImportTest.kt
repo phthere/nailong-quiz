@@ -80,6 +80,6 @@ class PdfBankImportTest {
         assertEquals(4, q.options.size)
         assertEquals("East", q.options.first().text)
         assertTrue(PdfQuestionParser.issues(q).isNotEmpty()) // No answer is invented.
-        file.delete()
+        assertTrue(file.delete())
     }
 }
