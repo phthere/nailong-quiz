@@ -1,0 +1,29 @@
+构建与验证报告
+
+安装包：奶龙刷题_内置党章党史.apk
+文件大小：12422228 字节
+SHA-256：5e9e2a3873137bfa47f15c73b39bdc2a1305b142ea5ff74b21e16d0c3e9ed8ae
+应用名称：奶龙刷题·内置题库
+应用 ID：com.nailong.quiz.study
+版本：1.1.0（versionCode 11）
+最低系统：Android 8.0（API 26）
+目标 SDK：34
+
+构建结果：Release 构建成功，正式包非 debuggable。
+安装包签名验证：通过（APK Signature Scheme v2）。
+ZIP 对齐检查：通过。
+安装包 ZIP 完整性检查：通过。
+启动 Activity 与 Application 类名：检查通过。
+内置题库字节与源码 assets 文件逐一一致，题目总数与 ID 唯一性检查通过。
+湘潭大学原题库：1038 道
+党章题库：357 道
+党史题库：728 道
+
+自动化测试：16 项全部通过，失败 0，错误 0，跳过 0。
+com.nailong.quiz.BankSwitchingTest：1 项，失败 0，错误 0，跳过 0
+com.nailong.quiz.BuiltInBanksTest：2 项，失败 0，错误 0，跳过 0
+com.nailong.quiz.GraderTest：9 项，失败 0，错误 0，跳过 0
+com.nailong.quiz.QuestionBankIntegrityTest：4 项，失败 0，错误 0，跳过 0
+
+题库切换测试在 Robolectric 的模拟 Android 9（API 28）环境运行，覆盖题目数量、错题、收藏、答题记录和顺序刷题位置分别保存。
+未在实体安卓手机上进行安装或界面测试。
