@@ -1,0 +1,26 @@
+# Gradle and Android build output
+.gradle/
+.kotlin/
+**/build/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.idsig
+
+# Local IDE settings
+.idea/
+*.iml
+.DS_Store
+
+# Signing keys and credentials (keep outside Git)
+signing/
+*.jks
+*.keystore
+*.p12
+*.pfx
+key.properties
+keystore.properties
+.env
+.env.*
+!.env.example
