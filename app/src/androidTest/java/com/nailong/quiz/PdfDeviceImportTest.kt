@@ -12,7 +12,9 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollToNode
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -74,7 +76,7 @@ class PdfDeviceImportTest {
         assertEquals("A", question.answer)
         assertEquals(listOf("A", "B"), question.options.map { it.label })
         assertTrue(PdfQuestionParser.issues(question).toString(), PdfQuestionParser.issues(question).isEmpty())
-        compose.onNodeWithText("识别 1 题 · 已选 1 题 · 待修正 0 题").performScrollTo()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("识别 1 题 · 已选 1 题 · 待修正 0 题"))
         compose.waitForIdle()
         val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
         File(app.getExternalFilesDir(null), "pdf-import-preview.png").outputStream().use {
