@@ -86,6 +86,7 @@ class BankCatalog(private val context: Context) {
             mutableBanks.value = BuiltInBank.entries + current.filterNot { it.id == bank.id }
             AtomicFile(questionFile(context, bank.id)).delete()
             AppDatabase.delete(context, bank)
+            Unit
         }
     }
 

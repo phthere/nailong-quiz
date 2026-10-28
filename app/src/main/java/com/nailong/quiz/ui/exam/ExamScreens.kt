@@ -64,7 +64,7 @@ fun ExamSetupScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
     LaunchedEffect(app.repository.bank.id) { pool = app.repository.allQuestions().filter { it.canAutoGrade } }
     val config = ExamConfig(durationText.toIntOrNull() ?: 0, countText.toIntOrNull() ?: 0, shuffleOpts, types,
         if (custom) amounts.mapValues { it.value.toIntOrNull() ?: -1 } else emptyMap())
-    val error = pool?.let { config.validationError(it) } ?: "正在加载可用题目…"
+    val error = if (pool == null) "正在加载可用题目…" else config.validationError(pool.orEmpty())
 
     AppBackground(settings = settings, showBg = !settings.bgHomeOnly) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
