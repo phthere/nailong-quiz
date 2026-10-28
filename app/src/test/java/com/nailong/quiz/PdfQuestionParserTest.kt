@@ -151,7 +151,7 @@ class PdfQuestionParserTest {
 
     @Test fun `fill answers must match the number of blanks`() {
         val q = parse("一、填空题\n1. 第一____，第二____。\n答案：只有一个答案").questions.single()
-        assertTrue(PdfQuestionParser.issues(q).any { it.contains("空位不一致") })
+        assertTrue(PdfQuestionParser.issues(q).any { it.contains("答案对应关系") })
     }
 
     @Test fun `no numbered questions produces a helpful empty preview`() {
