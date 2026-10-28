@@ -2,6 +2,7 @@ package com.nailong.quiz
 
 import android.graphics.Bitmap
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -11,6 +12,7 @@ import com.nailong.quiz.data.ThemeBg
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Rule
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -31,6 +33,7 @@ class CardUiDeviceTest {
         val copy = instrumentation.uiAutomation.executeShellCommand("cp ${file.absolutePath} /data/local/tmp/nailong-ui-$name.png")
         android.os.ParcelFileDescriptor.AutoCloseInputStream(copy).use { it.readBytes() }
     }
+    @After fun captureLastState() { capture("last-state") }
     @Test fun homeCardsNavigationAndLargeFontsRemainUsable() {
         val app = compose.activity.application as NailongApp
         runBlocking { app.settingsRepo.update { it.copy(selectedBank = BuiltInBank.DEFAULT.id, darkMode = DarkMode.DARK, themeBg = ThemeBg.CLOUD, fontScale = 1f) } }
@@ -58,6 +61,8 @@ class CardUiDeviceTest {
         compose.onNodeWithTag("stats_page_header").assertIsDisplayed()
         capture("stats")
         compose.onNodeWithText("首页").performClick()
+        waitForPage("home_scroll")
+        compose.onNodeWithTag("home_scroll").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, -100_000f) }
         waitForPage("home_hero")
         compose.onNodeWithTag("home_hero").performScrollTo()
         runBlocking { app.settingsRepo.update { it.copy(fontScale = 1.3f) } }

@@ -74,17 +74,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          script: |
-            ./gradlew --no-daemon --max-workers=2 --stacktrace :app:connectedDebugAndroidTest
-            mkdir -p device-proof
-            adb pull /data/local/tmp/nailong-pdf-import-preview.png device-proof/pdf-import-preview.png || echo 'Preview screenshot unavailable; test results remain in the connected test report.'
-            adb pull /data/local/tmp/nailong-document-import-preview.png device-proof/document-import-preview.png || echo 'Document screenshot unavailable; see the connected test report.'
-            adb pull /data/local/tmp/nailong-direct-import.png device-proof/direct-import.png || true
-            adb pull /data/local/tmp/nailong-ui-home.png device-proof/ui-home.png || true
-            adb pull /data/local/tmp/nailong-ui-home-actions.png device-proof/ui-home-actions.png || true
-            adb pull /data/local/tmp/nailong-ui-bank.png device-proof/ui-bank.png || true
-            adb pull /data/local/tmp/nailong-ui-stats.png device-proof/ui-stats.png || true
-            adb pull /data/local/tmp/nailong-ui-home-large.png device-proof/ui-home-large.png || true
+          script: bash scripts/run-device-tests.sh
       - name: Upload device test reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
