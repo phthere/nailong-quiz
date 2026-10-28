@@ -33,8 +33,8 @@ class NailongApp : Application() {
     suspend fun deleteImportedBank(bank: com.nailong.quiz.data.ImportedBank) = withContext(NonCancellable) { bankMutex.withLock {
         if (repository.bank.id == bank.id) {
             val fallback = BuiltInBank.DEFAULT
-            val nextDb = AppDatabase.get(this, fallback)
-            val next = QuizRepository(this, nextDb, settingsRepo, fallback, bankCatalog)
+            val nextDb = AppDatabase.get(this@NailongApp, fallback)
+            val next = QuizRepository(this@NailongApp, nextDb, settingsRepo, fallback, bankCatalog)
             next.ensureImported()
             repository = next
             db = nextDb
