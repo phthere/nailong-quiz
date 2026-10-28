@@ -28,6 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -50,10 +54,17 @@ import com.nailong.quiz.ui.nav.Routes
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ExamSetupScreen(app: NailongApp, settings: AppSettings, nav: NavHostController) {
-    var duration by remember { mutableIntStateOf(settings.examDurationMin) }
-    var count by remember { mutableIntStateOf(settings.examQuestionCount) }
+    var durationText by remember { mutableStateOf(settings.examDurationMin.toString()) }
+    var countText by remember { mutableStateOf(settings.examQuestionCount.toString()) }
     var shuffleOpts by remember { mutableStateOf(settings.shuffleOptions) }
-    var types by remember { mutableStateOf(setOf(QuestionType.SINGLE, QuestionType.MULTI, QuestionType.JUDGE, QuestionType.FILL)) }
+    val types = setOf(QuestionType.SINGLE, QuestionType.MULTI, QuestionType.JUDGE, QuestionType.FILL)
+    var custom by remember { mutableStateOf(false) }
+    var amounts by remember { mutableStateOf(types.associateWith { "0" }) }
+    var pool by remember { mutableStateOf<List<com.nailong.quiz.domain.Question>?>(null) }
+    LaunchedEffect(app.repository.bank.id) { pool = app.repository.allQuestions().filter { it.canAutoGrade } }
+    val config = ExamConfig(durationText.toIntOrNull() ?: 0, countText.toIntOrNull() ?: 0, shuffleOpts, types,
+        if (custom) amounts.mapValues { it.value.toIntOrNull() ?: -1 } else emptyMap())
+    val error = pool?.let { config.validationError(it) } ?: "正在加载可用题目…"
 
     AppBackground(settings = settings, showBg = !settings.bgHomeOnly) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
@@ -68,28 +79,22 @@ fun ExamSetupScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
             ) {
                 GlassCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("考试时长", style = MaterialTheme.typography.titleSmall)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(30, 45, 60, 90).forEach { d ->
-                                FilterChip(selected = duration == d, onClick = { duration = d }, label = { Text("$d 分钟") })
-                            }
+                        OutlinedTextField(durationText, { durationText = it.filter(Char::isDigit).take(4) },
+                            label = { Text("考试时长（分钟）") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        OutlinedTextField(countText, { countText = it.filter(Char::isDigit).take(4) },
+                            label = { Text("题目总数") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("自定义各题型数量", Modifier.weight(1f))
+                            Switch(custom, { custom = it })
                         }
-                        Text("题目数量", style = MaterialTheme.typography.titleSmall)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(20, 30, 50, 100).forEach { c ->
-                                FilterChip(selected = count == c, onClick = { count = c }, label = { Text("$c 题") })
-                            }
+                        if (custom) types.forEach { type ->
+                            OutlinedTextField(amounts[type].orEmpty(), { value -> amounts = amounts + (type to value.filter(Char::isDigit).take(4)) },
+                                label = { Text("${type.zh}（可用 ${pool?.count { it.type == type } ?: 0} 道）") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         }
-                        Text("抽取题型（简答题不参与自动判分，不纳入考试）", style = MaterialTheme.typography.titleSmall)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(QuestionType.SINGLE, QuestionType.MULTI, QuestionType.JUDGE, QuestionType.FILL).forEach { t ->
-                                FilterChip(
-                                    selected = t in types,
-                                    onClick = { types = if (t in types) types - t else types + t },
-                                    label = { Text(t.zh) }
-                                )
-                            }
-                        }
+                        Text(if (custom) "已配置 ${amounts.values.sumOf { it.toIntOrNull() ?: 0 }} / ${config.count} 道" else "从当前题库随机抽取指定总数。")
+                        Text("简答题使用参考答案自评，暂不纳入自动评分考试。", style = MaterialTheme.typography.bodySmall)
+                        if (error != null) Text(error, color = MaterialTheme.colorScheme.error)
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                             Text("随机打乱选项", style = MaterialTheme.typography.bodyMedium)
                             Switch(checked = shuffleOpts, onCheckedChange = { shuffleOpts = it })
@@ -99,10 +104,11 @@ fun ExamSetupScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
                 }
                 Button(
                     onClick = {
-                        if (types.isEmpty()) return@Button
-                        PracticeBus.examConfig = ExamConfig(duration, count, shuffleOpts, types)
+                        if (error != null) return@Button
+                        PracticeBus.examConfig = config
                         nav.navigate(Routes.EXAM)
                     },
+                    enabled = error == null,
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("开始考试") }
                 TextButton(onClick = { nav.navigate(Routes.EXAM_HISTORY) }, modifier = Modifier.fillMaxWidth()) { Text("查看历史成绩") }

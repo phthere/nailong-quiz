@@ -25,7 +25,8 @@ data class ExamConfig(
     val durationMin: Int = 60,
     val count: Int = 50,
     val shuffleOptions: Boolean = false,
-    val typeFilter: Set<QuestionType> = setOf(QuestionType.SINGLE, QuestionType.MULTI, QuestionType.JUDGE, QuestionType.FILL)
+    val typeFilter: Set<QuestionType> = setOf(QuestionType.SINGLE, QuestionType.MULTI, QuestionType.JUDGE, QuestionType.FILL),
+    val typeCounts: Map<QuestionType, Int> = emptyMap()
 )
 
 data class ExamUiState(
@@ -54,7 +55,10 @@ class ExamViewModel(private val app: NailongApp, private val config: ExamConfig)
         viewModelScope.launch {
             app.repository.ensureImported()
             var pool = app.repository.allQuestions().filter { it.type in config.typeFilter && it.canAutoGrade }
-            pool = pool.shuffled().take(config.count.coerceAtMost(pool.size))
+            val error = config.validationError(pool)
+            if (error != null) { _state.update { it.copy(loading = false, error = error) }; return@launch }
+            pool = if (config.typeCounts.isEmpty()) pool.shuffled().take(config.count)
+                else config.typeCounts.flatMap { (type, count) -> pool.filter { it.type == type }.shuffled().take(count) }.shuffled()
             if (pool.isEmpty()) {
                 _state.update { it.copy(loading = false, error = "暂无可自动评分的题目，可先顺序学习并自评，或在题库中完善答案后再考试。") }
                 return@launch
@@ -176,4 +180,18 @@ class ExamViewModelFactory(private val app: NailongApp, private val config: Exam
         @Suppress("UNCHECKED_CAST")
         return ExamViewModel(app, config) as T
     }
+}
+
+fun ExamConfig.validationError(pool: List<Question>): String? {
+    if (durationMin !in 1..1440) return "考试时长请输入 1～1440 分钟"
+    if (count !in 1..5000) return "题目总数请输入 1～5000"
+    val eligible = pool.filter { it.canAutoGrade && it.type in typeFilter }
+    if (typeCounts.isNotEmpty()) {
+        if (typeCounts.values.any { it < 0 } || typeCounts.values.sum() != count) return "各题型数量之和须等于总题数"
+        typeCounts.forEach { (type, number) ->
+            val available = eligible.count { it.type == type }
+            if (number > available) return "${type.zh}可用 $available 道，请调整数量"
+        }
+    } else if (count > eligible.size) return "当前可用 ${eligible.size} 道题，请调整总题数"
+    return null
 }

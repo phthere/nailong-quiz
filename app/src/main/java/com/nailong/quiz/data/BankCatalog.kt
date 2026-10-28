@@ -77,6 +77,18 @@ class BankCatalog(private val context: Context) {
             }
         }
 
+    suspend fun delete(bank: ImportedBank) = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            check(loadError == null) { loadError.orEmpty() }
+            val current = banks.value.filterIsInstance<ImportedBank>()
+            require(current.any { it.id == bank.id }) { "题库已删除" }
+            writeAtomic(index, Jsons.json.encodeToString(current.filterNot { it.id == bank.id }))
+            mutableBanks.value = BuiltInBank.entries + current.filterNot { it.id == bank.id }
+            AtomicFile(questionFile(context, bank.id)).delete()
+            AppDatabase.delete(context, bank)
+        }
+    }
+
     /** Persist edits with stable question IDs and keep all learning records. */
     suspend fun updateQuestion(bank: ImportedBank, db: AppDatabase, question: QuestionJson): QuestionJson = withContext(Dispatchers.IO) {
         mutex.withLock {

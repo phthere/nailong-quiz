@@ -29,6 +29,11 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         private val instances = mutableMapOf<String, AppDatabase>()
 
+        fun delete(context: Context, bank: QuizBank) = synchronized(this) {
+            instances.remove(context.applicationContext.getDatabasePath(bank.databaseName).absolutePath)?.close()
+            context.deleteDatabase(bank.databaseName)
+        }
+
         fun get(context: Context, bank: QuizBank): AppDatabase = synchronized(this) {
             instances.getOrPut(context.applicationContext.getDatabasePath(bank.databaseName).absolutePath) {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, bank.databaseName)

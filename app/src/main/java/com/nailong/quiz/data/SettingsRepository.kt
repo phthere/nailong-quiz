@@ -40,7 +40,8 @@ data class AppSettings(
     val masteryThreshold: Int = 2,     // 连续答对 N 次标记已掌握
     val examDurationMin: Int = 60,
     val examQuestionCount: Int = 50,
-    val dailyGoal: Int = 30
+    val dailyGoal: Int = 30,
+    val targetExamDate: String = ""
 )
 
 class SettingsRepository(private val context: Context) {
@@ -61,6 +62,7 @@ class SettingsRepository(private val context: Context) {
         val MASTERY = intPreferencesKey("mastery_threshold")
         val EXAM_DUR = intPreferencesKey("exam_duration_min")
         val EXAM_COUNT = intPreferencesKey("exam_question_count")
+        val EXAM_DATE = stringPreferencesKey("target_exam_date")
         val DAILY_GOAL = intPreferencesKey("daily_goal")
         val SEQ_INDEX = intPreferencesKey("seq_index")
     }
@@ -91,7 +93,8 @@ class SettingsRepository(private val context: Context) {
             masteryThreshold = p[K.MASTERY] ?: 2,
             examDurationMin = p[K.EXAM_DUR] ?: 60,
             examQuestionCount = p[K.EXAM_COUNT] ?: 50,
-            dailyGoal = p[K.DAILY_GOAL] ?: 30
+            dailyGoal = p[K.DAILY_GOAL] ?: 30,
+            targetExamDate = p[K.EXAM_DATE] ?: ""
         )
     }
 
@@ -113,7 +116,8 @@ class SettingsRepository(private val context: Context) {
                 masteryThreshold = p[K.MASTERY] ?: 2,
                 examDurationMin = p[K.EXAM_DUR] ?: 60,
                 examQuestionCount = p[K.EXAM_COUNT] ?: 50,
-                dailyGoal = p[K.DAILY_GOAL] ?: 30
+                dailyGoal = p[K.DAILY_GOAL] ?: 30,
+            targetExamDate = p[K.EXAM_DATE] ?: ""
             )
             val n = transform(cur)
             p[K.SELECTED_BANK] = n.selectedBank
@@ -132,6 +136,7 @@ class SettingsRepository(private val context: Context) {
             p[K.EXAM_DUR] = n.examDurationMin
             p[K.EXAM_COUNT] = n.examQuestionCount
             p[K.DAILY_GOAL] = n.dailyGoal
+            p[K.EXAM_DATE] = n.targetExamDate
         }
     }
 }

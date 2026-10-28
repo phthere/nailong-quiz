@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BankSelector(app: NailongApp, settings: AppSettings) {
+    var deleting by remember { mutableStateOf<com.nailong.quiz.data.ImportedBank?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var deleteError by remember { mutableStateOf<String?>(null) }
     var open by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val banks by app.bankCatalog.banks.collectAsState()
@@ -40,6 +43,20 @@ fun BankSelector(app: NailongApp, settings: AppSettings) {
                 Text("切换"); Spacer(Modifier.width(4.dp)); Icon(Icons.Filled.ExpandMore, null, Modifier.size(21.dp))
             }
         }
+    }
+    deleting?.let { bank ->
+        AlertDialog(onDismissRequest = { if (!busy) deleting = null },
+            title = { Text("删除这套题库？") },
+            text = { Text("将删除“${bank.title}”及其学习记录、错题、收藏和考试记录，无法撤销。" + (deleteError?.let { "\n$it" } ?: "")) },
+            confirmButton = { TextButton(enabled = !busy, onClick = {
+                busy = true
+                scope.launch {
+                    try { app.deleteImportedBank(bank); deleting = null; open = false }
+                    catch (e: Exception) { deleteError = e.message }
+                    finally { busy = false }
+                }
+            }) { Text(if (busy) "正在删除…" else "确认删除") } },
+            dismissButton = { TextButton(enabled = !busy, onClick = { deleting = null }) { Text("取消") } })
     }
     if (open) ModalBottomSheet(onDismissRequest = { open = false }, sheetState = sheet,
         containerColor = MaterialTheme.colorScheme.background) {
@@ -63,6 +80,9 @@ fun BankSelector(app: NailongApp, settings: AppSettings) {
                             Column(Modifier.weight(1f)) {
                                 Text(bank.title, style = MaterialTheme.typography.titleSmall)
                                 Text("${bank.count} 道题", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (bank is com.nailong.quiz.data.ImportedBank) TextButton(onClick = { deleteError = null; deleting = bank }) {
+                                Text("删除", color = MaterialTheme.colorScheme.error)
                             }
                             if (bank.id == current.id) Icon(Icons.Filled.CheckCircle, "当前题库", tint = MaterialTheme.colorScheme.primary)
                         }

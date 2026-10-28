@@ -76,6 +76,7 @@ fun HomeScreen(app: NailongApp, settings: AppSettings, nav: androidx.navigation.
     val lifecycle = LocalLifecycleOwner.current
     val colors = MaterialTheme.colorScheme
     val dark = colors.background.luminance() < .3f
+    var editGoal by remember { mutableStateOf(false) }
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(answers, settings.dailyGoal) { vm.refresh() }
     LaunchedEffect(Unit) { visible = true }
@@ -89,6 +90,7 @@ fun HomeScreen(app: NailongApp, settings: AppSettings, nav: androidx.navigation.
         if (tabs.any { it.route == route }) nav.navigateTab(route)
         else nav.navigate(route) { launchSingleTop = true }
     }
+    if (editGoal) GoalDialog(app, settings, (state.total - state.practiced).coerceAtLeast(0)) { editGoal = false }
     AppBackground(settings, showBg = true) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 20.dp)
             .testTag("home_scroll"), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -115,7 +117,7 @@ fun HomeScreen(app: NailongApp, settings: AppSettings, nav: androidx.navigation.
                 }
             }
             Spacer(Modifier.height(126.dp))
-            GlassCard(Modifier.fillMaxWidth().testTag("home_progress"), corner = 28.dp) {
+            GlassCard(Modifier.fillMaxWidth().testTag("home_progress"), corner = 28.dp, onClick = { editGoal = true }) {
                 Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                     ProgressRing(state.todayAnswers.toFloat() / state.dailyGoal.coerceAtLeast(1), 104.dp) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -126,7 +128,7 @@ fun HomeScreen(app: NailongApp, settings: AppSettings, nav: androidx.navigation.
                     Spacer(Modifier.width(20.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("小步进步，稳稳积累", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("今日目标 ${state.dailyGoal} 题", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                        Text("今日目标 ${state.dailyGoal} 题 · 调整", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                         Text("已练习 ${state.practiced} / ${state.total}", style = MaterialTheme.typography.titleMedium)
                         Text("连续学习 ${state.streak} 天", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                     }
