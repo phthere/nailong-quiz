@@ -34,6 +34,8 @@ import com.nailong.quiz.NailongApp
 import com.nailong.quiz.data.AppSettings
 import com.nailong.quiz.ui.components.*
 import com.nailong.quiz.ui.nav.Routes
+import com.nailong.quiz.ui.nav.navigateTab
+import com.nailong.quiz.ui.nav.tabs
 import com.nailong.quiz.ui.theme.NailongYellow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,7 +86,8 @@ fun HomeScreen(app: NailongApp, settings: AppSettings, nav: androidx.navigation.
     }
     fun navigate(route: String) {
         if (settings.vibrate) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-        nav.navigate(route) { launchSingleTop = true }
+        if (tabs.any { it.route == route }) nav.navigateTab(route)
+        else nav.navigate(route) { launchSingleTop = true }
     }
     AppBackground(settings, showBg = true) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 20.dp)

@@ -79,6 +79,18 @@ val tabs = listOf(
     TabItem(Routes.MINE, "我的", Icons.Filled.Person),
 )
 
+/** The home entry stays on the stack. Restoring its saved children can reopen
+ * a detail/tab destination that was entered from a home shortcut instead. */
+fun NavHostController.navigateTab(route: String) {
+    if (route == Routes.HOME) {
+        if (!popBackStack(Routes.HOME, false)) navigate(Routes.HOME) { launchSingleTop = true }
+    } else navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
 /** 当前练习/考试配置在内存中传递（进程内有效），顺序模式进度持久化在数据库 */
 object PracticeBus {
     var config: com.nailong.quiz.ui.practice.PracticeConfig? = null
@@ -103,11 +115,7 @@ fun AppNav(app: NailongApp, settings: AppSettings) {
                         NavigationBarItem(
                             selected = current == tab.route,
                             onClick = {
-                                if (current != tab.route) nav.navigate(tab.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                                if (current != tab.route) nav.navigateTab(tab.route)
                             },
                             icon = { Icon(tab.icon, contentDescription = null, modifier = Modifier.graphicsLayer { scaleX = scale.value; scaleY = scale.value }) },
                             label = { Text(tab.label, fontWeight = if (current == tab.route) FontWeight.SemiBold else FontWeight.Normal) },
