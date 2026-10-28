@@ -42,7 +42,7 @@ fun AppBackground(settings: AppSettings, showBg: Boolean, content: @Composable B
     val dark = colors.background.luminance() < .3f
     Box(Modifier.fillMaxSize().background(colors.background)) {
         if (showBg) {
-            Image(painterResource(settings.themeBg.drawableRes()), null, contentScale = ContentScale.Crop,
+            Image(painterResource(settings.themeBg.drawableRes()), null, alignment = Alignment.TopCenter, contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().then(if (settings.bgBlur > .02f && Build.VERSION.SDK_INT >= 31)
                     Modifier.blur((settings.bgBlur * 20).dp) else Modifier))
             Box(Modifier.fillMaxSize().background((if (dark) Color.Black else Color.White)
