@@ -24,10 +24,8 @@ import java.io.File
 import java.security.MessageDigest
 import kotlin.math.roundToInt
 
-data class PdfReadResult(val fileName: String, val sha256: String, val pages: List<PdfTextPage>)
-
 class PdfBankReader(private val context: Context) {
-    suspend fun read(uri: Uri, forceOcr: Boolean, progress: (String) -> Unit): PdfReadResult = withContext(Dispatchers.IO) {
+    suspend fun read(uri: Uri, forceOcr: Boolean, progress: (String) -> Unit): BankReadResult = withContext(Dispatchers.IO) {
         val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
         } ?: "新题库.pdf"
@@ -57,7 +55,7 @@ class PdfBankReader(private val context: Context) {
             }
             require(header.contains("%PDF-")) { "请选择 PDF 文件，不能只修改文件后缀" }
             val pages = extract(file, forceOcr, progress)
-            PdfReadResult(name, digest.digest().joinToString("") { "%02x".format(it) }, pages)
+            BankReadResult(name, digest.digest().joinToString("") { "%02x".format(it) }, pages)
         } catch (e: InvalidPasswordException) {
             throw IllegalArgumentException("PDF 已加密，请使用你有权打开的无密码副本")
         } catch (e: SecurityException) {

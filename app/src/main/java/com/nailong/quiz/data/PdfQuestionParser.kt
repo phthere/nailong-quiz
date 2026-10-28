@@ -5,7 +5,7 @@ import com.nailong.quiz.domain.QuestionType
 import com.nailong.quiz.domain.blankSlots
 import java.text.Normalizer
 
-data class PdfTextPage(val number: Int, val text: String, val usedOcr: Boolean = false)
+data class PdfTextPage(val number: Int, val text: String, val usedOcr: Boolean = false, val locationLabel: String? = null)
 data class PdfParseResult(val questions: List<QuestionJson>, val warnings: List<String>)
 
 /** Conservative local parser: missing or ambiguous answers remain empty for review. */
@@ -16,7 +16,7 @@ object PdfQuestionParser {
     private val explanation = Regex("(?:【(?:解析|说明)】|(?:答案)?解析\\s*[:：])")
     private val inlineAnswer = Regex("[（(]\\s*([A-H](?:[A-H\\s,、]*[A-H])?|正确|错误|对|错|√|×|✓|✗)\\s*[）)]")
     private val pageNumber = Regex("^(?:[-—]\\s*)?(?:第\\s*)?\\d{1,4}\\s*(?:页)?(?:\\s*[/共]\\s*\\d+\\s*页?)?(?:\\s*[-—])?$")
-    private data class Block(val no: Int, val type: QuestionType?, val page: Int, val lines: MutableList<String>)
+    private data class Block(val no: Int, val type: QuestionType?, val page: Int, val lines: MutableList<String>, val locationLabel: String?)
     private data class AnswerKey(val no: Int, val type: QuestionType?, val answer: String)
 
     fun parse(pages: List<PdfTextPage>, source: String): PdfParseResult {
@@ -62,12 +62,12 @@ object PdfQuestionParser {
                 if (match != null) {
                     finish()
                     val no = (match.groupValues[1].ifBlank { match.groupValues[2] }).toInt()
-                    current = Block(no, type, page.number, mutableListOf(match.groupValues[3]))
+                    current = Block(no, type, page.number, mutableListOf(match.groupValues[3]), page.locationLabel)
                 } else current?.lines?.add(line)
             }
         }
         finish()
-        require(blocks.size <= 5000) { "识别到超过 5000 道题，请拆分 PDF 后导入" }
+        require(blocks.size <= 5000) { "识别到超过 5000 道题，请拆分文件后导入" }
         val preliminaryQuestions = blocks.mapIndexed { index, block -> parseBlock(block, index + 1, source) }
         val questions = blocks.mapIndexed { index, block ->
             val preliminary = preliminaryQuestions[index]
@@ -90,12 +90,13 @@ object PdfQuestionParser {
         }
         val warnings = mutableListOf<String>()
         if (pages.any { it.usedOcr }) warnings += "有 ${pages.count { it.usedOcr }} 页使用图片文字识别，请特别核对题号、选项字母和答案。"
-        if (questions.isEmpty()) warnings += "未识别到带数字题号的题目。支持“1. 题目”“1、题目”或“第1题”；可尝试按图片重新识别。"
+        if (questions.isEmpty()) warnings += "未识别到带数字题号的题目。支持“1. 题目”“1、题目”或“第1题”。" +
+            if (pages.any { it.locationLabel == null }) "PDF 可尝试按图片重新识别。" else "请检查原文题号格式，或手动补充。"
         if (questions.any { issues(it).isNotEmpty() }) warnings += "部分题目缺少答案或结构不完整；请修改，或取消选中后再导入。"
         if (keys.any { key -> key.type == null && blocks.count { it.no == key.no } > 1 }) warnings += "不同题型使用了重复题号，未自动关联无题型标识的答案表。"
         if (keys.any { key -> key.type != null && preliminaryQuestions.count { it.origNo == key.no && it.type == key.type.name } > 1 }) warnings += "同一题型有重复题号，未自动关联对应答案表，请手动核对。"
         if (unusedKeyLines > 0) warnings += "答案区有 $unusedKeyLines 行未能关联，请对照 PDF 核对。"
-        warnings += "请对照原 PDF 核对总题数；分栏、表格、公式、配图和复杂编号可能无法完整识别。配图不会导入。"
+        warnings += "请对照原文件核对总题数；复杂排版、公式、配图和多级编号可能无法完整识别。配图不会导入。"
         return PdfParseResult(questions, warnings)
     }
 
@@ -129,7 +130,7 @@ object PdfQuestionParser {
         }
         if (type == QuestionType.FILL) stem = stem.replace(Regex("[（(]\\s*[）)]"), "____")
         val question = QuestionJson(id, block.no, type.name, type.zh, stem, options,
-            source = "$source · 第 ${block.page} 页")
+            source = "$source · ${block.locationLabel ?: "第 ${block.page} 页"}")
         return withAnswer(question, rawAnswer)
     }
 

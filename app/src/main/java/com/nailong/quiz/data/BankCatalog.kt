@@ -57,7 +57,7 @@ class BankCatalog(private val context: Context) {
                 require(questions.isNotEmpty()) { "至少需要一道题" }
                 require(questions.size <= 5000) { "单个题库最多 5000 道题" }
                 require(questions.all { PdfQuestionParser.issues(it).isEmpty() }) { "请先修正待核对题目，或取消选中这些题目" }
-                check(findDocument(documentSha256) == null) { "这份 PDF 已经导入，请在切换题库中打开它" }
+                check(findDocument(documentSha256) == null) { "这份文件已经导入，请在切换题库中打开它" }
                 val current = banks.value.filterIsInstance<ImportedBank>()
                 val id = (current.maxOfOrNull { it.id } ?: (FIRST_IMPORTED_ID - 1)) + 1
                 val bank = ImportedBank(id, title.trim().take(80), questions.size, documentSha256)

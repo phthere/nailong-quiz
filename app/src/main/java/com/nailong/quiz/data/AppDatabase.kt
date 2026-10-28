@@ -27,10 +27,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun examDao(): ExamDao
 
     companion object {
-        private val instances = mutableMapOf<Int, AppDatabase>()
+        private val instances = mutableMapOf<String, AppDatabase>()
 
         fun get(context: Context, bank: QuizBank): AppDatabase = synchronized(this) {
-            instances.getOrPut(bank.id) {
+            instances.getOrPut(context.applicationContext.getDatabasePath(bank.databaseName).absolutePath) {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, bank.databaseName)
                     .build()
             }

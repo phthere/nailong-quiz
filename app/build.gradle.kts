@@ -28,8 +28,8 @@ android {
         applicationId = "com.nailong.quiz.study"
         minSdk = 26
         targetSdk = 34
-        versionCode = providers.environmentVariable("NAILONG_VERSION_CODE").orElse("1005").get().toInt()
-        versionName = "1.2.0"
+        versionCode = providers.environmentVariable("NAILONG_VERSION_CODE").orElse("1012").get().toInt()
+        versionName = "1.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

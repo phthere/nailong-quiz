@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostController) {
+fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostController, documentMode: Boolean = false) {
     val vm: PdfImportViewModel = viewModel(factory = PdfImportViewModelFactory(app))
     val state by vm.state.collectAsState()
     var forceOcr by rememberSaveable { mutableStateOf(false) }
@@ -39,7 +39,7 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
     var editing by remember { mutableStateOf<QuestionJson?>(null) }
     val scope = rememberCoroutineScope()
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) vm.read(uri, forceOcr)
+        if (uri != null) { if (documentMode) vm.readDocument(uri) else vm.read(uri, forceOcr) }
     }
     val issues = remember(state.drafts) { state.drafts.associate { it.question.id to PdfQuestionParser.issues(it.question) } }
     val selected = state.drafts.count { it.included }
@@ -47,7 +47,7 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
 
     AppBackground(settings, showBg = !settings.bgHomeOnly) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            TopAppBar(title = { Text("从 PDF 新建题库") }, navigationIcon = {
+            TopAppBar(title = { Text(if (documentMode) "从文档新建题库" else "从 PDF 新建题库") }, navigationIcon = {
                 IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") }
             })
             when {
@@ -56,7 +56,7 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Text(state.progress)
-                    Text("识别在本机完成。扫描页较多时需要一些时间，请保持此页面打开。", style = MaterialTheme.typography.bodySmall)
+                    Text(if (documentMode) "正在本机直接读取文档文字，请保持此页面打开。" else "识别在本机完成。扫描页较多时需要一些时间，请保持此页面打开。", style = MaterialTheme.typography.bodySmall)
                     if (state.document == null) OutlinedButton(onClick = vm::cancel) { Text("取消识别") }
                 }
                 state.savedBankId != null -> Column(Modifier.fillMaxSize().padding(24.dp),
@@ -72,16 +72,16 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
                         item {
                             GlassCard(Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    Text("选择 PDF → 核对识别结果 → 保存题库", fontWeight = FontWeight.SemiBold)
-                                    Text("支持带数字题号的单选、多选、判断、填空和简答题。文字版直接读取；扫描版使用本机中文识别。", style = MaterialTheme.typography.bodySmall)
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(if (documentMode) "选择文档 → 核对题目和答案 → 保存题库" else "选择 PDF → 核对识别结果 → 保存题库", fontWeight = FontWeight.SemiBold)
+                                    Text(if (documentMode) "支持 Word（.docx）和纯文本（.txt）。直接读取文字，保留常见自动编号和题库表格；优先使用带清晰题号、选项及答案的文档。" else "支持带数字题号的单选、多选、判断、填空和简答题。文字版直接读取；扫描版使用本机中文识别。", style = MaterialTheme.typography.bodySmall)
+                                    if (!documentMode) Row(verticalAlignment = Alignment.CenterVertically) {
                                         Checkbox(checked = forceOcr, onCheckedChange = { forceOcr = it })
                                         Text("整份 PDF 按图片识别（文字乱码时可重试）", style = MaterialTheme.typography.bodySmall)
                                     }
-                                    OutlinedButton(onClick = { picker.launch(arrayOf("application/pdf")) }, modifier = Modifier.fillMaxWidth()) {
-                                        Text(if (state.document == null) "选择 PDF 文件" else "重新选择 PDF")
+                                    OutlinedButton(onClick = { picker.launch(if (documentMode) arrayOf("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain", "application/octet-stream") else arrayOf("application/pdf")) }, modifier = Modifier.fillMaxWidth()) {
+                                        Text(if (documentMode) { if (state.document == null) "选择文档文件" else "重新选择文档" } else { if (state.document == null) "选择 PDF 文件" else "重新选择 PDF" })
                                     }
-                                    Text("单次最多 50 MB、1000 页、5000 道题。原文需包含答案，识别不会自动解题。", style = MaterialTheme.typography.bodySmall)
+                                    Text(if (documentMode) "DOCX 最多 50 MB、TXT 最多 10 MB，单次最多 5000 题。旧版 .doc 请另存为 .docx，图片内容请使用 PDF 扫描导入。原文需包含答案。" else "单次最多 50 MB、1000 页、5000 道题。原文需包含答案，识别不会自动解题。", style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }

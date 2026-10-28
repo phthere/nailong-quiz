@@ -7,7 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.nailong.quiz.NailongApp
 import com.nailong.quiz.data.PdfBankReader
 import com.nailong.quiz.data.PdfQuestionParser
-import com.nailong.quiz.data.PdfReadResult
+import com.nailong.quiz.data.BankReadResult
+import com.nailong.quiz.data.DocumentBankReader
 import com.nailong.quiz.data.QuestionJson
 import com.nailong.quiz.domain.QuestionType
 import kotlinx.coroutines.CancellationException
@@ -24,7 +25,7 @@ data class PdfImportState(
     val busy: Boolean = false,
     val progress: String = "",
     val title: String = "",
-    val document: PdfReadResult? = null,
+    val document: BankReadResult? = null,
     val drafts: List<ImportDraft> = emptyList(),
     val warnings: List<String> = emptyList(),
     val error: String? = null,
@@ -37,20 +38,28 @@ class PdfImportViewModel(private val app: NailongApp) : ViewModel() {
     private var work: Job? = null
 
     fun read(uri: Uri, forceOcr: Boolean) {
+        readSource { progress -> PdfBankReader(app).read(uri, forceOcr, progress) }
+    }
+
+    fun readDocument(uri: Uri) {
+        readSource { progress -> DocumentBankReader(app).read(uri, progress) }
+    }
+
+    private fun readSource(reader: suspend ((String) -> Unit) -> BankReadResult) {
         if (state.value.busy) return
         work = viewModelScope.launch {
-            mutableState.value = PdfImportState(busy = true, progress = "正在读取 PDF…")
+            mutableState.value = PdfImportState(busy = true, progress = "正在读取题库文件…")
             try {
-                val doc = PdfBankReader(app).read(uri, forceOcr) { text -> mutableState.update { it.copy(progress = text) } }
-                check(app.bankCatalog.findDocument(doc.sha256) == null) { "这份 PDF 已导入，请从顶部“切换”打开已有题库" }
+                val doc = reader { text -> mutableState.update { it.copy(progress = text) } }
+                check(app.bankCatalog.findDocument(doc.sha256) == null) { "这份文件已导入，请从顶部“切换”打开已有题库" }
                 val parsed = withContext(Dispatchers.Default) { PdfQuestionParser.parse(doc.pages, doc.fileName) }
                 mutableState.value = PdfImportState(title = doc.fileName.substringBeforeLast('.').take(80), document = doc,
-                    drafts = parsed.questions.map { ImportDraft(it) }, warnings = parsed.warnings)
+                    drafts = parsed.questions.map { ImportDraft(it) }, warnings = doc.warnings + parsed.warnings)
             } catch (e: CancellationException) {
                 mutableState.value = PdfImportState()
                 throw e
             } catch (e: Exception) {
-                mutableState.value = PdfImportState(error = e.message ?: "PDF 读取失败，请尝试其他文件")
+                mutableState.value = PdfImportState(error = e.message ?: "文件读取失败，请尝试其他文件")
             }
         }
     }

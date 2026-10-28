@@ -177,6 +177,8 @@ fun SettingsScreen(app: NailongApp, settings: AppSettings, nav: NavHostControlle
             GlassCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("数据管理", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    OutlinedButton(onClick = { nav.navigate(com.nailong.quiz.ui.nav.Routes.DOCUMENT_IMPORT) }, modifier = Modifier.fillMaxWidth()) { Text("从文档新建题库（Word/TXT）") }
+                    Text("优先使用可编辑的 DOCX 或清晰编号的 TXT，直接读取题目与答案。", style = MaterialTheme.typography.bodySmall)
                     OutlinedButton(onClick = { nav.navigate(com.nailong.quiz.ui.nav.Routes.PDF_IMPORT) }, modifier = Modifier.fillMaxWidth()) { Text("从 PDF 新建题库") }
                     Text("选择 PDF，识别并核对题目后保存。支持文字版和扫描版。", style = MaterialTheme.typography.bodySmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
