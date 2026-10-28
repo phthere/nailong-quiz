@@ -29,7 +29,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = providers.environmentVariable("NAILONG_VERSION_CODE").orElse("1013").get().toInt()
-        versionName = "1.4.0"
+        versionName = "1.4.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

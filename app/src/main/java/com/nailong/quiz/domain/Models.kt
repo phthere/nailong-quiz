@@ -38,7 +38,7 @@ data class Question(
                 (type == QuestionType.SINGLE && answer.length != 1) || (type == QuestionType.MULTI && answer.length < 2)
         }
         QuestionType.JUDGE -> answer !in setOf("对", "错")
-        QuestionType.FILL -> fillAnswers.isEmpty() || fillAnswers.any { it.isBlank() }
+        QuestionType.FILL -> resolveFillAnswers(stem, answer, fillAnswers).let { it.isEmpty() || it.any { part -> part.isBlank() } }
         QuestionType.ESSAY -> answer.isBlank()
     }
     val usesSelfAssessment: Boolean get() = type == QuestionType.ESSAY || needsReview
@@ -51,7 +51,7 @@ data class Question(
             else -> options
         }
 
-    val blankCount: Int get() = stem.blankSlots()
+    val blankCount: Int get() = stem.blankSlots().coerceAtLeast(1)
 
     fun originalLabel(displayLabel: String): String = labelMap[displayLabel] ?: displayLabel
 }
@@ -66,4 +66,19 @@ fun String.blankSlots(): Int {
         } else inBlank = false
     }
     return count
+}
+
+/** Split only when the separator yields exactly the number of visible blanks.
+ * A single answer may itself contain punctuation, so keep it intact otherwise. */
+fun resolveFillAnswers(stem: String, answer: String, existing: List<String> = emptyList()): List<String> {
+    val count = stem.blankSlots().coerceAtLeast(1)
+    if (existing.size == count && existing.all { it.isNotBlank() }) return existing
+    val text = answer.trim().ifBlank { existing.joinToString("；") }
+    if (text.isBlank()) return emptyList()
+    if (count == 1) return listOf(text)
+    for (separator in listOf(Regex("[;；\\n]+"), Regex("[;；,，、\\n]+"))) {
+        val parts = text.split(separator).map { it.trim() }
+        if (parts.size == count && parts.all { it.isNotBlank() }) return parts
+    }
+    return existing.ifEmpty { listOf(text) }
 }

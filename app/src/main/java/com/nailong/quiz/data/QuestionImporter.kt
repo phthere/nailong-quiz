@@ -1,6 +1,7 @@
 package com.nailong.quiz.data
 
 import android.content.Context
+import com.nailong.quiz.domain.resolveFillAnswers
 import com.nailong.quiz.domain.Option
 import com.nailong.quiz.domain.Question
 import com.nailong.quiz.domain.QuestionType
@@ -86,4 +87,7 @@ fun QuestionEntity.toDomain(): Question = Question(
 
 fun Question.toQuestionJson() = QuestionJson(id, origNo, type.name, typeZh, stem, options, answer, fillAnswers, conflict, source)
 
-fun QuestionJson.markForReview(): QuestionJson = copy(conflict = conflict || PdfQuestionParser.issues(this).isNotEmpty())
+fun QuestionJson.markForReview(): QuestionJson {
+    val normalized = if (type == "FILL") copy(fillAnswers = resolveFillAnswers(stem, answer, fillAnswers)) else this
+    return normalized.copy(conflict = conflict || PdfQuestionParser.issues(normalized).isNotEmpty())
+}

@@ -59,7 +59,7 @@ object Grader {
      * 多空答案数量与空位数量一致时逐空比对；不一致时按题库原文整体比对（保守，不改判题标准）。
      */
     fun gradeFill(userInputs: List<String>, question: Question): Boolean {
-        val standards = question.fillAnswers
+        val standards = resolveFillAnswers(question.stem, question.answer, question.fillAnswers)
         if (standards.isEmpty()) return false
         return if (standards.size == userInputs.size && standards.size > 1) {
             standards.zip(userInputs).all { (std, usr) -> normFill(std) == normFill(usr) }
@@ -73,7 +73,7 @@ object Grader {
 
     /** 逐空判定细节（用于 UI 标记每个空对错），空数不一致时返回空列表 */
     fun gradeFillPerBlank(userInputs: List<String>, question: Question): List<Boolean> {
-        val standards = question.fillAnswers
+        val standards = resolveFillAnswers(question.stem, question.answer, question.fillAnswers)
         if (standards.size != userInputs.size || standards.size <= 1) return emptyList()
         return standards.zip(userInputs).map { (std, usr) -> normFill(std) == normFill(usr) }
     }
@@ -84,6 +84,7 @@ object Grader {
             .joinToString("")
             .replace(" ", "")
             .replace("　", "")
+            .replace(Regex("\\s+"), "")
             .lowercase()
 
     /** 统一判分入口。userAnswer: 单选/判断为单个展示label或"对/错"；多选为拼接的展示label串；填空为各空输入 */

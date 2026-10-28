@@ -2,6 +2,7 @@ package com.nailong.quiz.data
 
 import com.nailong.quiz.domain.Option
 import com.nailong.quiz.domain.QuestionType
+import com.nailong.quiz.domain.resolveFillAnswers
 import com.nailong.quiz.domain.blankSlots
 import java.text.Normalizer
 
@@ -142,9 +143,7 @@ object PdfQuestionParser {
             else -> text
         }
         val fills = if (question.type == QuestionType.FILL.name && text.isNotBlank()) {
-            val count = question.stem.blankSlots()
-            if (count <= 1) listOf(text.replace(Regex("\\s+"), " ")) else text.split(Regex("[;；\\n]+"))
-                .map { it.trim() }.filter { it.isNotBlank() }
+            resolveFillAnswers(question.stem, text)
         } else emptyList()
         return question.copy(answer = answer, fillAnswers = fills)
     }
@@ -163,9 +162,9 @@ object PdfQuestionParser {
             }
             QuestionType.JUDGE -> if (question.answer !in setOf("对", "错")) add("判断题答案需为“对”或“错”")
             QuestionType.FILL -> {
-                if (question.stem.blankSlots() == 0) add("请用 ____ 标出填空位置")
-                if (question.fillAnswers.isEmpty() || question.fillAnswers.any { it.isBlank() } ||
-                    question.fillAnswers.size != question.stem.blankSlots()) add("填空答案数量与空位不一致；每空答案占一行")
+                val fills = resolveFillAnswers(question.stem, question.answer, question.fillAnswers)
+                if (fills.isEmpty() || fills.any { it.isBlank() }) add("缺少填空答案")
+                else if (fills.size != question.stem.blankSlots().coerceAtLeast(1)) add("无法确定每个空的答案对应关系，可先保存后核对")
             }
             QuestionType.ESSAY -> if (question.answer.isBlank()) add("缺少参考答案")
         }
