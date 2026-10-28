@@ -18,6 +18,9 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class CardUiDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    private fun waitForPage(tag: String) {
+        compose.waitUntil(30_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    }
     private fun capture(name: String) {
         compose.waitForIdle()
         val app = compose.activity.application as NailongApp
@@ -41,17 +44,21 @@ class CardUiDeviceTest {
         }
         capture("home-actions")
         compose.onNodeWithTag("home_action_wrong").performScrollTo().performClick()
+        waitForPage("wrong_page_header")
         compose.onNodeWithTag("wrong_page_header").assertIsDisplayed()
         compose.onNodeWithText("题库", useUnmergedTree = false).performClick()
+        waitForPage("bank_page_header")
         compose.onNodeWithTag("bank_page_header").assertIsDisplayed()
         val firstId = runBlocking { app.repository.allQuestions().first().id }
         compose.waitUntil(30_000) { compose.onAllNodesWithTag("bank_question_$firstId").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("bank_search").assertIsDisplayed()
         capture("bank")
         compose.onNodeWithText("统计").performClick()
+        waitForPage("stats_page_header")
         compose.onNodeWithTag("stats_page_header").assertIsDisplayed()
         capture("stats")
         compose.onNodeWithText("首页").performClick()
+        waitForPage("home_hero")
         compose.onNodeWithTag("home_hero").performScrollTo()
         runBlocking { app.settingsRepo.update { it.copy(fontScale = 1.3f) } }
         compose.onNodeWithTag("home_hero").performScrollTo().assertIsDisplayed()
