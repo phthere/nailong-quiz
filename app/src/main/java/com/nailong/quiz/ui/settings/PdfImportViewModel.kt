@@ -51,10 +51,11 @@ class PdfImportViewModel(private val app: NailongApp) : ViewModel() {
             mutableState.value = PdfImportState(busy = true, progress = "正在读取题库文件…")
             try {
                 val doc = reader { text -> mutableState.update { it.copy(progress = text) } }
-                check(app.bankCatalog.findDocument(doc.sha256) == null) { "这份文件已导入，请从顶部“切换”打开已有题库" }
+                val duplicate = app.bankCatalog.findDocument(doc.sha256) != null
                 val parsed = withContext(Dispatchers.Default) { PdfQuestionParser.parse(doc.pages, doc.fileName) }
                 mutableState.value = PdfImportState(title = doc.fileName.substringBeforeLast('.').take(80), document = doc,
-                    drafts = parsed.questions.map { ImportDraft(it) }, warnings = doc.warnings + parsed.warnings)
+                    drafts = parsed.questions.map { ImportDraft(it) }, warnings =
+                        (if (duplicate) listOf("已有相同文件，本次会新建独立副本，原题库和学习记录保留。") else emptyList()) + doc.warnings + parsed.warnings)
             } catch (e: CancellationException) {
                 mutableState.value = PdfImportState()
                 throw e
@@ -90,7 +91,7 @@ class PdfImportViewModel(private val app: NailongApp) : ViewModel() {
             try {
                 val bank = app.bankCatalog.create(current.title, doc.sha256, current.drafts.filter { it.included }.map { it.question })
                 // Keep the current bank selected until the user leaves this screen; saving never changes its records.
-                mutableState.update { it.copy(busy = false, savedBankId = bank.id) }
+                mutableState.update { it.copy(busy = false, savedBankId = bank.id, title = bank.title) }
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { mutableState.update { it.copy(busy = false, error = e.message ?: "保存失败") } }
         }

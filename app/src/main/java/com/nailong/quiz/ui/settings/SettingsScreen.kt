@@ -90,7 +90,7 @@ fun SettingsScreen(app: NailongApp, settings: AppSettings, nav: NavHostControlle
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Spacer(Modifier.height(8.dp))
-            Text("我的", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            com.nailong.quiz.ui.components.PageHeader("我的", "学习偏好与题库管理")
 
             // ---- 主题背景 ----
             GlassCard(Modifier.fillMaxWidth()) {

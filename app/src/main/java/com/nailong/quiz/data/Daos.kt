@@ -38,6 +38,12 @@ interface QuestionDao {
 
 @Dao
 interface RecordDao {
+    @Query("SELECT COUNT(*) FROM answer_records")
+    fun countFlow(): Flow<Int>
+
+    @Query("SELECT r.* FROM answer_records r INNER JOIN (SELECT questionId, MAX(id) AS lastId FROM answer_records GROUP BY questionId) latest ON r.id = latest.lastId")
+    fun latestAnswersFlow(): Flow<List<AnswerRecordEntity>>
+
     @Insert
     suspend fun insert(record: AnswerRecordEntity): Long
 

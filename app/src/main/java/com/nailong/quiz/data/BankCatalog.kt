@@ -2,6 +2,7 @@ package com.nailong.quiz.data
 
 import android.content.Context
 import android.util.AtomicFile
+import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,15 +54,16 @@ class BankCatalog(private val context: Context) {
         withContext(Dispatchers.IO) {
             mutex.withLock {
                 check(loadError == null) { loadError.orEmpty() }
-                require(title.isNotBlank()) { "请填写题库名称" }
                 require(questions.isNotEmpty()) { "至少需要一道题" }
                 require(questions.size <= 5000) { "单个题库最多 5000 道题" }
-                require(questions.all { PdfQuestionParser.issues(it).isEmpty() }) { "请先修正待核对题目，或取消选中这些题目" }
-                check(findDocument(documentSha256) == null) { "这份文件已经导入，请在切换题库中打开它" }
                 val current = banks.value.filterIsInstance<ImportedBank>()
                 val id = (current.maxOfOrNull { it.id } ?: (FIRST_IMPORTED_ID - 1)) + 1
-                val bank = ImportedBank(id, title.trim().take(80), questions.size, documentSha256)
-                val data = QuestionBankJson(1, questions.size, questions.mapIndexed { i, q -> q.copy(id = i + 1) })
+                val baseTitle = title.trim().ifBlank { "新题库" }.take(74)
+                var bankTitle = baseTitle
+                var suffix = 2
+                while (banks.value.any { it.title == bankTitle }) bankTitle = "$baseTitle（${suffix++}）"
+                val bank = ImportedBank(id, bankTitle, questions.size, documentSha256)
+                val data = QuestionBankJson(1, questions.size, questions.mapIndexed { i, q -> q.markForReview().copy(id = i + 1) })
                 val questionFile = questionFile(context, id)
                 writeAtomic(AtomicFile(questionFile), Jsons.json.encodeToString(data))
                 try {
@@ -74,6 +76,28 @@ class BankCatalog(private val context: Context) {
                 bank
             }
         }
+
+    /** Persist edits with stable question IDs and keep all learning records. */
+    suspend fun updateQuestion(bank: ImportedBank, db: AppDatabase, question: QuestionJson): QuestionJson = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            val file = questionFile(context, bank.id)
+            val previous = file.readText()
+            val data = Jsons.json.decodeFromString<QuestionBankJson>(previous)
+            val original = data.questions.firstOrNull { it.id == question.id } ?: error("题目不存在")
+            val updated = question.copy(id = original.id, origNo = original.origNo, conflict = false).markForReview()
+            val next = data.copy(questions = data.questions.map { if (it.id == updated.id) updated else it })
+            try {
+                db.withTransaction {
+                    db.questionDao().insertAll(listOf(updated.toEntity()))
+                    writeAtomic(AtomicFile(file), Jsons.json.encodeToString(next))
+                }
+            } catch (e: Exception) {
+                runCatching { writeAtomic(AtomicFile(file), previous) }.exceptionOrNull()?.let { e.addSuppressed(it) }
+                throw e
+            }
+            updated
+        }
+    }
 
     private fun writeAtomic(file: AtomicFile, text: String) {
         check(file.baseFile.parentFile?.let { it.isDirectory || it.mkdirs() } == true) { "无法创建题库目录" }

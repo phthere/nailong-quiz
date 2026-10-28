@@ -72,7 +72,7 @@ fun PracticeScreen(app: NailongApp, settings: AppSettings, nav: NavHostControlle
     val vm: PracticeViewModel = viewModel(factory = PracticeViewModelFactory(app, config), key = config.title + config.mode)
     val st by vm.state.collectAsState()
     var showJump by remember { mutableStateOf(false) }
-    var essayRevealed by remember { mutableStateOf(false) }
+    var essayRevealed by remember(st.current?.id) { mutableStateOf(false) }
     val ctx = LocalContext.current
 
     // 答题反馈（震动/音效）
@@ -148,16 +148,16 @@ fun PracticeScreen(app: NailongApp, settings: AppSettings, nav: NavHostControlle
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Text(q.typeZh, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                                     Text("原题号 #${q.origNo}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    if (q.conflict) Text("答案存疑", style = MaterialTheme.typography.labelSmall, color = WrongRed)
+                                    if (q.needsReview) Text("待完善 · 自评", style = MaterialTheme.typography.labelSmall, color = WrongRed)
                                 }
-                                Text(q.stem, style = QuestionStemStyle)
+                                Text(q.stem.ifBlank { "题干待补充，可在题库页编辑" }, style = QuestionStemStyle)
                             }
                         }
 
                         val submitted = st.submitted.containsKey(q.id)
                         val isCorrect = st.submitted[q.id] == true
 
-                        when (q.type) {
+                        when (if (q.usesSelfAssessment) QuestionType.ESSAY else q.type) {
                             QuestionType.SINGLE, QuestionType.MULTI, QuestionType.JUDGE -> {
                                 val selection = st.selections[q.id] ?: emptySet()
                                 val correctLabels = Grader.correctDisplayLabels(q).let { if (q.type == QuestionType.JUDGE) setOf(q.answer) else it }
@@ -199,20 +199,24 @@ fun PracticeScreen(app: NailongApp, settings: AppSettings, nav: NavHostControlle
                             }
 
                             QuestionType.ESSAY -> {
+                                if (q.needsReview) {
+                                    Text("本题可先学习并自评，之后在题库页完善。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                    q.options.forEach { option -> Text("${option.label}. ${option.text}", style = MaterialTheme.typography.bodyLarge) }
+                                }
                                 if (!essayRevealed && !submitted) {
                                     Button(onClick = { essayRevealed = true }, modifier = Modifier.fillMaxWidth()) { Text("查看参考答案") }
                                 }
                                 if ((essayRevealed || submitted)) {
                                     GlassCard(Modifier.fillMaxWidth()) {
                                         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Text("参考答案", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                            Text(q.answer.ifBlank { "原资料未提供参考答案，请结合教材复习并自行评估。" }, style = MaterialTheme.typography.bodyMedium)
+                                            Text(if (q.needsReview) "原文答案 · 待完善" else "参考答案", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                            Text(q.answer.ifBlank { "暂未识别出可靠答案，可先学习并自评，或到题库页补充。" }, style = MaterialTheme.typography.bodyMedium)
                                         }
                                     }
                                     if (!submitted) {
                                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            Button(onClick = { vm.selfGrade(true) }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = CorrectGreen)) { Text("我答对了") }
-                                            OutlinedButton(onClick = { vm.selfGrade(false) }, modifier = Modifier.weight(1f)) { Text("还需巩固") }
+                                            Button(onClick = { vm.selfGrade(true) }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = CorrectGreen)) { Text("已掌握") }
+                                            OutlinedButton(onClick = { vm.selfGrade(false) }, modifier = Modifier.weight(1f)) { Text("需巩固") }
                                         }
                                     }
                                 }
@@ -220,7 +224,7 @@ fun PracticeScreen(app: NailongApp, settings: AppSettings, nav: NavHostControlle
                         }
 
                         // 反馈区
-                        if (submitted && q.type != QuestionType.ESSAY) {
+                        if (submitted && q.canAutoGrade) {
                             GlassCard(Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(

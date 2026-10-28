@@ -43,14 +43,18 @@ class PdfBankImportTest {
         assertEquals(previousRecords + 1, app.repository.totalAnswers())
     }
 
-    @Test fun `duplicate PDF and invalid question cannot create a bank`() = runBlocking {
+    @Test fun `duplicate files create independent copies and incomplete questions are preserved`() = runBlocking {
         val app = RuntimeEnvironment.getApplication() as NailongApp
         val questions = PdfQuestionParser.parse(listOf(PdfTextPage(1,
             "1. 一个问题。\nA. 第一项 B. 第二项\n答案：A")), "测试.pdf").questions
-        app.bankCatalog.create("第一套", "same-pdf", questions)
-        assertTrue(runCatching { app.bankCatalog.create("重复", "same-pdf", questions) }.isFailure)
-        assertTrue(runCatching { app.bankCatalog.create("无答案", "other", questions.map { it.copy(answer = "") }) }.isFailure)
-        assertEquals(4, app.bankCatalog.banks.value.size)
+        val first = app.bankCatalog.create("第一套", "same-pdf", questions)
+        val duplicate = app.bankCatalog.create("第一套", "same-pdf", questions)
+        val incomplete = app.bankCatalog.create("无答案", "other", questions.map { it.copy(answer = "") })
+        assertNotEquals(first.databaseName, duplicate.databaseName)
+        assertEquals("第一套（2）", duplicate.title)
+        val data = com.nailong.quiz.data.Jsons.json.decodeFromString(com.nailong.quiz.data.QuestionBankJson.serializer(), com.nailong.quiz.data.BankCatalog.questionFile(app, incomplete.id).readText())
+        assertTrue(data.questions.single().conflict)
+        assertEquals(6, app.bankCatalog.banks.value.size)
     }
 
     @Test fun `real text PDF is extracted page by page and parsed into questions`() = runBlocking {

@@ -53,10 +53,10 @@ class ExamViewModel(private val app: NailongApp, private val config: ExamConfig)
     init {
         viewModelScope.launch {
             app.repository.ensureImported()
-            var pool = app.repository.allQuestions().filter { it.type in config.typeFilter && it.type != QuestionType.ESSAY }
+            var pool = app.repository.allQuestions().filter { it.type in config.typeFilter && it.canAutoGrade }
             pool = pool.shuffled().take(config.count.coerceAtMost(pool.size))
             if (pool.isEmpty()) {
-                _state.update { it.copy(loading = false, error = "没有符合条件的题目") }
+                _state.update { it.copy(loading = false, error = "暂无可自动评分的题目，可先顺序学习并自评，或在题库中完善答案后再考试。") }
                 return@launch
             }
             _state.update {

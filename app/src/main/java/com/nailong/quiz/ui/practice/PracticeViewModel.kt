@@ -82,6 +82,7 @@ class PracticeViewModel(private val app: NailongApp, private val config: Practic
 
     fun selectOption(label: String) {
         val q = _state.value.current ?: return
+        if (q.usesSelfAssessment) return
         if (q.id in _state.value.submitted) return
         when (q.type) {
             QuestionType.SINGLE, QuestionType.JUDGE -> {
@@ -113,6 +114,7 @@ class PracticeViewModel(private val app: NailongApp, private val config: Practic
     fun submit() {
         val s = _state.value
         val q = s.current ?: return
+        if (q.usesSelfAssessment) return
         if (q.id in s.submitted) return
         val selection = s.selections[q.id]
         val fills = s.fillInputs[q.id]
@@ -133,13 +135,14 @@ class PracticeViewModel(private val app: NailongApp, private val config: Practic
     /** 简答题自评 */
     fun selfGrade(known: Boolean) {
         val q = _state.value.current ?: return
+        if (!q.usesSelfAssessment) return
         if (q.id in _state.value.submitted) return
         finalizeAnswer(q, known)
     }
 
     private fun finalizeAnswer(q: Question, correct: Boolean) {
         val s = _state.value
-        val userAnswer = when (q.type) {
+        val userAnswer = if (q.usesSelfAssessment) { if (correct) "自评已掌握" else "自评需巩固" } else when (q.type) {
             QuestionType.FILL -> (s.fillInputs[q.id] ?: emptyList()).joinToString("；")
             QuestionType.ESSAY -> if (correct) "自评已掌握" else "自评未掌握"
             else -> (s.selections[q.id] ?: emptySet()).sorted().joinToString("")

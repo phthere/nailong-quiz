@@ -8,6 +8,8 @@ import com.nailong.quiz.domain.QuestionType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 
@@ -15,7 +17,8 @@ class QuizRepository(
     private val context: Context,
     val db: AppDatabase,
     val settingsRepo: SettingsRepository,
-    val bank: QuizBank
+    val bank: QuizBank,
+    private val catalog: BankCatalog = BankCatalog(context)
 ) {
     private val importer = QuestionImporter(context, db, bank)
 
@@ -23,6 +26,12 @@ class QuizRepository(
 
     suspend fun questionCount(): Int = db.questionDao().count()
     fun questionCountFlow(): Flow<Int> = db.questionDao().countFlow()
+    fun allQuestionsFlow(): Flow<List<Question>> = db.questionDao().allFlow().map { list -> list.map { it.toDomain() } }.flowOn(Dispatchers.IO)
+
+    suspend fun updateQuestion(question: QuestionJson): QuestionJson {
+        val imported = bank as? ImportedBank ?: error("内置题库暂不支持在此编辑")
+        return catalog.updateQuestion(imported, db, question)
+    }
 
     suspend fun allQuestions(): List<Question> = withContext(Dispatchers.IO) {
         db.questionDao().all().map { it.toDomain() }
@@ -156,9 +165,9 @@ class QuizRepository(
         var streak = 0
         var expect = dayOf(System.currentTimeMillis())
         // 今天没刷过题时从昨天开始算
-        if (!days.contains(expect)) expect -= 1
+        if (!days.contains(expect)) expect = previousDay(expect)
         for (d in days) {
-            if (d == expect) { streak++; expect -= 1 }
+            if (d == expect) { streak++; expect = previousDay(expect) }
             else if (d < expect) break
         }
         return streak
@@ -193,6 +202,7 @@ class QuizRepository(
     }
 
     private fun todayStart(): Long = dayOf(System.currentTimeMillis())
+    private fun previousDay(time: Long): Long = Calendar.getInstance().apply { timeInMillis = time; add(Calendar.DAY_OF_YEAR, -1) }.timeInMillis
 
     private fun dayOf(time: Long): Long {
         val c = Calendar.getInstance()
@@ -210,7 +220,7 @@ enum class RandomScope(val zh: String) {
 
 /** 练习用题目装配：按需打乱选项 */
 fun Question.withShuffledOptions(enabled: Boolean, random: kotlin.random.Random = kotlin.random.Random): Question {
-    if (!enabled || type == QuestionType.JUDGE || type == QuestionType.FILL || type == QuestionType.ESSAY) return this
+    if (!enabled || usesSelfAssessment || type == QuestionType.JUDGE || type == QuestionType.FILL) return this
     val (opts, map) = Grader.shuffleOptions(options, random)
     return copy(options = opts, labelMap = map)
 }

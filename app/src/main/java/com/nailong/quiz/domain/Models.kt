@@ -28,6 +28,22 @@ data class Question(
     /** 展示 label -> 原始 label 的映射（未打乱时为恒等映射） */
     val labelMap: Map<String, String> = emptyMap()
 ) {
+    /** Incomplete imported items stay in the bank and use explicit self assessment. */
+    val needsReview: Boolean get() = conflict || stem.isBlank() || when (type) {
+        QuestionType.SINGLE, QuestionType.MULTI -> {
+            val labels = options.map { it.label }
+            options.size !in 2..8 || labels.distinct().size != labels.size ||
+                labels != ('A'..'H').take(labels.size).map { it.toString() } || options.any { it.text.isBlank() } ||
+                answer.isBlank() || answer.any { it.toString() !in labels } ||
+                (type == QuestionType.SINGLE && answer.length != 1) || (type == QuestionType.MULTI && answer.length < 2)
+        }
+        QuestionType.JUDGE -> answer !in setOf("对", "错")
+        QuestionType.FILL -> fillAnswers.isEmpty() || fillAnswers.any { it.isBlank() }
+        QuestionType.ESSAY -> answer.isBlank()
+    }
+    val usesSelfAssessment: Boolean get() = type == QuestionType.ESSAY || needsReview
+    val canAutoGrade: Boolean get() = !usesSelfAssessment
+
     /** 判断题视为两个固定选项 */
     val effectiveOptions: List<Option>
         get() = when (type) {

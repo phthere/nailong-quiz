@@ -1,6 +1,15 @@
 package com.nailong.quiz.ui.nav
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Bookmark
@@ -76,6 +85,7 @@ object PracticeBus {
     var examConfig: com.nailong.quiz.ui.exam.ExamConfig? = null
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AppNav(app: NailongApp, settings: AppSettings) {
     val nav = rememberNavController()
@@ -87,26 +97,38 @@ fun AppNav(app: NailongApp, settings: AppSettings) {
         topBar = { if (isTab) com.nailong.quiz.ui.components.BankSelector(app, settings) },
         bottomBar = {
             if (isTab) {
-                NavigationBar {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                     tabs.forEach { tab ->
+                        val scale = animateFloatAsState(if (current == tab.route) 1.06f else 1f, spring(stiffness = 600f), label = "navigationIcon")
                         NavigationBarItem(
                             selected = current == tab.route,
                             onClick = {
-                                nav.navigate(tab.route) {
+                                if (current != tab.route) nav.navigate(tab.route) {
                                     popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) }
+                            icon = { Icon(tab.icon, contentDescription = null, modifier = Modifier.graphicsLayer { scaleX = scale.value; scaleY = scale.value }) },
+                            label = { Text(tab.label, fontWeight = if (current == tab.route) FontWeight.SemiBold else FontWeight.Normal) },
+                            colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer, selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                     }
                 }
             }
         }
     ) { inner ->
-        NavHost(navController = nav, startDestination = Routes.HOME, modifier = Modifier.padding(inner)) {
+        NavHost(navController = nav, startDestination = Routes.HOME, modifier = Modifier.padding(inner).consumeWindowInsets(inner),
+            enterTransition = {
+                if (tabs.any { it.route == initialState.destination.route } && tabs.any { it.route == targetState.destination.route }) fadeIn(tween(180))
+                else fadeIn(tween(220)) + slideInHorizontally(tween(240)) { it / 10 }
+            },
+            exitTransition = { fadeOut(tween(120)) },
+            popEnterTransition = { fadeIn(tween(180)) + slideInHorizontally(tween(220)) { -it / 14 } },
+            popExitTransition = { fadeOut(tween(140)) + slideOutHorizontally(tween(220)) { it / 10 } }
+        ) {
             composable(Routes.HOME) { HomeScreen(app, settings, nav) }
             composable(Routes.BANK) { BankScreen(app, settings, nav) }
             composable(Routes.WRONG) { WrongBookScreen(app, settings, nav) }

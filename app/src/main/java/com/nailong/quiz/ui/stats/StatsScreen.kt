@@ -1,5 +1,12 @@
 package com.nailong.quiz.ui.stats
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.material3.OutlinedButton
+import com.nailong.quiz.ui.components.PageHeader
+import com.nailong.quiz.ui.nav.Routes
+import com.nailong.quiz.domain.QuestionType
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,7 +95,7 @@ fun StatsScreen(app: NailongApp, settings: AppSettings, nav: NavHostController) 
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Spacer(Modifier.height(8.dp))
-            Text("学习统计", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            PageHeader("学习统计", "每一步积累，都看得见", Modifier.testTag("stats_page_header"))
             Spacer(Modifier.height(2.dp))
 
             GlassCard(Modifier.fillMaxWidth()) {
@@ -131,7 +138,9 @@ fun StatsScreen(app: NailongApp, settings: AppSettings, nav: NavHostController) 
                     if (st.typeAccuracy.isEmpty()) {
                         Text("还没有答题数据", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    st.typeAccuracy.forEach { (type, stat) ->
+                    QuestionType.entries.forEach { questionType ->
+                        val type = if (questionType == QuestionType.ESSAY) "简答（自评）" else questionType.zh.removeSuffix("题")
+                        val stat = st.typeAccuracy[questionType.zh] ?: (0 to 0)
                         val acc = if (stat.second == 0) 0f else stat.first.toFloat() / stat.second
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -171,6 +180,7 @@ fun StatsScreen(app: NailongApp, settings: AppSettings, nav: NavHostController) 
                     }
                 }
             }
+            OutlinedButton(onClick = { nav.navigate(Routes.EXAM_HISTORY) }, modifier = Modifier.fillMaxWidth()) { Text("历史模拟考试") }
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -186,9 +196,11 @@ private fun StatCell(label: String, value: String, modifier: Modifier) {
 
 @Composable
 private fun MiniProgress(value: Float, color: Color) {
+    val animated = animateFloatAsState(value.coerceIn(0f, 1f), tween(550), label = "accuracyProgress")
+    val track = MaterialTheme.colorScheme.outlineVariant
     Canvas(Modifier.fillMaxWidth().height(6.dp)) {
-        drawRoundRect(color = Color(0xFFE0E6EC), size = size, cornerRadius = androidx.compose.ui.geometry.CornerRadius(12f, 12f))
-        drawRoundRect(color = color, size = size.copy(width = size.width * value.coerceIn(0f, 1f)), cornerRadius = androidx.compose.ui.geometry.CornerRadius(12f, 12f))
+        drawRoundRect(color = track, size = size, cornerRadius = androidx.compose.ui.geometry.CornerRadius(12f, 12f))
+        drawRoundRect(color = color, size = size.copy(width = size.width * animated.value), cornerRadius = androidx.compose.ui.geometry.CornerRadius(12f, 12f))
     }
 }
 

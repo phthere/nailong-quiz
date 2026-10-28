@@ -16,6 +16,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.core.view.WindowCompat
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +44,15 @@ class MainActivity : ComponentActivity() {
                 DarkMode.SYSTEM -> isSystemInDarkTheme()
                 DarkMode.LIGHT -> false
                 DarkMode.DARK -> true
+            }
+            SideEffect {
+                WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !dark
+                    isAppearanceLightNavigationBars = !dark
+                }
+                window.statusBarColor = android.graphics.Color.TRANSPARENT
+                window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                if (android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
             }
             var readyBank by remember { mutableStateOf<Int?>(null) }
             var bankError by remember { mutableStateOf<String?>(null) }

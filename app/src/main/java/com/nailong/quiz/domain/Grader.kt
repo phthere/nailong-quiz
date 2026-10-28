@@ -88,7 +88,7 @@ object Grader {
 
     /** 统一判分入口。userAnswer: 单选/判断为单个展示label或"对/错"；多选为拼接的展示label串；填空为各空输入 */
     fun isCorrect(question: Question, userDisplaySelection: Set<String>?, fillInputs: List<String>?): Boolean =
-        when (question.type) {
+        if (!question.canAutoGrade) false else when (question.type) {
             QuestionType.SINGLE -> userDisplaySelection?.singleOrNull()?.let { gradeSingle(it, question) } ?: false
             QuestionType.MULTI -> gradeMulti(userDisplaySelection ?: emptySet(), question)
             QuestionType.JUDGE -> userDisplaySelection?.singleOrNull()?.let { gradeJudge(it, question) } ?: false

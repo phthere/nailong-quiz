@@ -25,13 +25,13 @@ class NailongApp : Application() {
         bankCatalog = BankCatalog(this)
         settingsRepo = SettingsRepository(this)
         db = AppDatabase.get(this, BuiltInBank.DEFAULT)
-        repository = QuizRepository(this, db, settingsRepo, BuiltInBank.DEFAULT)
+        repository = QuizRepository(this, db, settingsRepo, BuiltInBank.DEFAULT, bankCatalog)
     }
 
     suspend fun activateBank(id: Int) = bankMutex.withLock {
         val bank = bankCatalog.find(id) ?: BuiltInBank.DEFAULT
         val nextDb = AppDatabase.get(this, bank)
-        val nextRepository = QuizRepository(this, nextDb, settingsRepo, bank)
+        val nextRepository = QuizRepository(this, nextDb, settingsRepo, bank, bankCatalog)
         nextRepository.ensureImported()
         db = nextDb
         repository = nextRepository

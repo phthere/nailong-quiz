@@ -83,3 +83,7 @@ fun QuestionEntity.toDomain(): Question = Question(
     conflict = conflict,
     source = source
 )
+
+fun Question.toQuestionJson() = QuestionJson(id, origNo, type.name, typeZh, stem, options, answer, fillAnswers, conflict, source)
+
+fun QuestionJson.markForReview(): QuestionJson = copy(conflict = conflict || PdfQuestionParser.issues(this).isNotEmpty())

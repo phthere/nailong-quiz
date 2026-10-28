@@ -37,6 +37,9 @@ def main():
         raise SystemExit("APK version code must be newer than the original release")
     if "application-debuggable" in badging:
         raise SystemExit("Expected a non-debuggable release APK")
+    label = re.search(r"^application-label:'([^']*)'", badging, re.M)
+    if label is None or label.group(1) != "奶龙刷题":
+        raise SystemExit("The app launcher name must be 奶龙刷题")
     if "android.permission.INTERNET" in badging:
         raise SystemExit("Offline PDF import must not request Internet access")
     checked_output([str(tools / "zipalign"), "-c", "-p", "4", str(args.apk)])

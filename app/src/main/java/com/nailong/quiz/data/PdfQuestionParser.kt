@@ -92,7 +92,7 @@ object PdfQuestionParser {
         if (pages.any { it.usedOcr }) warnings += "有 ${pages.count { it.usedOcr }} 页使用图片文字识别，请特别核对题号、选项字母和答案。"
         if (questions.isEmpty()) warnings += "未识别到带数字题号的题目。支持“1. 题目”“1、题目”或“第1题”。" +
             if (pages.any { it.locationLabel == null }) "PDF 可尝试按图片重新识别。" else "请检查原文题号格式，或手动补充。"
-        if (questions.any { issues(it).isNotEmpty() }) warnings += "部分题目缺少答案或结构不完整；请修改，或取消选中后再导入。"
+        if (questions.any { issues(it).isNotEmpty() }) warnings += "部分题目待完善，可直接新建，之后在题库页编辑。"
         if (keys.any { key -> key.type == null && blocks.count { it.no == key.no } > 1 }) warnings += "不同题型使用了重复题号，未自动关联无题型标识的答案表。"
         if (keys.any { key -> key.type != null && preliminaryQuestions.count { it.origNo == key.no && it.type == key.type.name } > 1 }) warnings += "同一题型有重复题号，未自动关联对应答案表，请手动核对。"
         if (unusedKeyLines > 0) warnings += "答案区有 $unusedKeyLines 行未能关联，请对照 PDF 核对。"
@@ -151,7 +151,7 @@ object PdfQuestionParser {
 
     fun issues(question: QuestionJson): List<String> = buildList {
         if (question.stem.isBlank()) add("缺少题干")
-        if (question.conflict) add("原文答案与答案表存在冲突，请核对后保存修改")
+        if (question.conflict) add("题目或答案待完善，可先保存后核对")
         when (QuestionType.from(question.type)) {
             QuestionType.SINGLE, QuestionType.MULTI -> {
                 val labels = question.options.map { it.label }

@@ -77,7 +77,7 @@ class PdfDeviceImportTest {
         assertEquals("A", question.answer)
         assertEquals(listOf("A", "B"), question.options.map { it.label })
         assertTrue(PdfQuestionParser.issues(question).toString(), PdfQuestionParser.issues(question).isEmpty())
-        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("识别 1 题 · 已选 1 题 · 待修正 0 题"))
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("识别 1 题 · 已选 1 题 · 待完善 0 题"))
         compose.waitForIdle()
         val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
         val screenshotFile = File(app.getExternalFilesDir(null), "pdf-import-preview.png")
@@ -89,7 +89,7 @@ class PdfDeviceImportTest {
         val copy = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(
             "cp ${screenshotFile.absolutePath} /data/local/tmp/nailong-pdf-import-preview.png")
         android.os.ParcelFileDescriptor.AutoCloseInputStream(copy).use { it.readBytes() }
-        compose.onNodeWithText("确认新建题库（1 题）").assertIsEnabled().performClick()
+        compose.onNodeWithText("新建题库（1 题）").assertIsEnabled().performClick()
         compose.waitUntil(30_000) { vm.state.value.savedBankId != null || vm.state.value.error != null }
         assertNull(vm.state.value.error)
         compose.onNodeWithText("题库已保存").assertIsDisplayed()

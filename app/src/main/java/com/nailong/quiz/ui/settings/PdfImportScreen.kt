@@ -62,7 +62,7 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
                 state.savedBankId != null -> Column(Modifier.fillMaxSize().padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)) {
                     Text("题库已保存", style = MaterialTheme.typography.headlineSmall)
-                    Text("${state.title} · $selected 道题\n可以在顶部“切换”中找到，学习记录独立保存。")
+                    Text("${state.title} · $selected 道题\n可在顶部“切换”中找到；待完善题目可在题库页继续编辑。")
                     Button(onClick = { scope.launch { app.settingsRepo.update { it.copy(selectedBank = state.savedBankId!!) } } },
                         modifier = Modifier.fillMaxWidth()) { Text("切换到新题库") }
                     OutlinedButton(onClick = { nav.popBackStack() }, modifier = Modifier.fillMaxWidth()) { Text("返回") }
@@ -72,7 +72,7 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
                         item {
                             GlassCard(Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    Text(if (documentMode) "选择文档 → 核对题目和答案 → 保存题库" else "选择 PDF → 核对识别结果 → 保存题库", fontWeight = FontWeight.SemiBold)
+                                    Text(if (documentMode) "选择文档 → 一键新建题库" else "选择 PDF → 一键新建题库", fontWeight = FontWeight.SemiBold)
                                     Text(if (documentMode) "支持 Word（.docx）和纯文本（.txt）。直接读取文字，保留常见自动编号和题库表格；优先使用带清晰题号、选项及答案的文档。" else "支持带数字题号的单选、多选、判断、填空和简答题。文字版直接读取；扫描版使用本机中文识别。", style = MaterialTheme.typography.bodySmall)
                                     if (!documentMode) Row(verticalAlignment = Alignment.CenterVertically) {
                                         Checkbox(checked = forceOcr, onCheckedChange = { forceOcr = it })
@@ -81,7 +81,7 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
                                     OutlinedButton(onClick = { picker.launch(if (documentMode) arrayOf("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain", "application/octet-stream") else arrayOf("application/pdf")) }, modifier = Modifier.fillMaxWidth()) {
                                         Text(if (documentMode) { if (state.document == null) "选择文档文件" else "重新选择文档" } else { if (state.document == null) "选择 PDF 文件" else "重新选择 PDF" })
                                     }
-                                    Text(if (documentMode) "DOCX 最多 50 MB、TXT 最多 10 MB，单次最多 5000 题。旧版 .doc 请另存为 .docx，图片内容请使用 PDF 扫描导入。原文需包含答案。" else "单次最多 50 MB、1000 页、5000 道题。原文需包含答案，识别不会自动解题。", style = MaterialTheme.typography.bodySmall)
+                                    Text(if (documentMode) "DOCX 最多 50 MB、TXT 最多 10 MB，单次最多 5000 题。旧版 .doc 请另存为 .docx，图片内容请使用 PDF 扫描导入。缺失答案也可保存，稍后再完善。" else "单次最多 50 MB、1000 页、5000 道题。缺失答案也可保存；未完善题目可先学习并自评。", style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
@@ -92,16 +92,16 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
                                     singleLine = true, modifier = Modifier.fillMaxWidth())
                             }
                             item {
-                                Text("识别 ${state.drafts.size} 题 · 已选 $selected 题 · 待修正 $invalid 题", fontWeight = FontWeight.SemiBold)
+                                Text("识别 ${state.drafts.size} 题 · 已选 $selected 题 · 待完善 $invalid 题", fontWeight = FontWeight.SemiBold)
                                 state.warnings.forEach { Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp)) }
                             }
                             item {
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("只看待核对题目")
+                                    Text("只看待完善题目")
                                     Switch(checked = onlyIssues, onCheckedChange = { onlyIssues = it })
                                 }
-                                if (invalid > 0) TextButton(onClick = vm::excludeInvalid) { Text("取消选中待修正题目") }
+                                if (invalid > 0) TextButton(onClick = vm::excludeInvalid) { Text("可选：不导入待完善题目") }
                                 OutlinedButton(onClick = { editing = vm.addQuestion() }, enabled = state.drafts.size < 5000) { Text("补充遗漏题目") }
                             }
                             items(state.drafts.filter { !onlyIssues || issues[it.question.id].orEmpty().isNotEmpty() }, key = { it.question.id }) { draft ->
@@ -114,7 +114,7 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
                                             Text("${q.typeZh} · 原题号 ${q.origNo}", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                                             TextButton(onClick = { editing = q }) { Text("修改") }
                                         }
-                                        Text(q.stem.ifBlank { "（缺少题干）" }, maxLines = 6)
+                                        Text(q.stem.ifBlank { "（题干待补充，可先保存）" }, maxLines = 6)
                                         q.options.forEach { Text("${it.label}. ${it.text}", style = MaterialTheme.typography.bodySmall, maxLines = 3) }
                                         Text("答案：${q.answer.ifBlank { "未识别到" }}", color = if (problems.isEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
                                         problems.forEach { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
@@ -126,9 +126,9 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
                     }
                     if (state.document != null) Surface(tonalElevation = 3.dp) {
                         Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(if (invalid > 0) "请修改 $invalid 道题或取消选中后再保存" else "确认题目数量、选项与答案后保存", style = MaterialTheme.typography.bodySmall)
-                            Button(onClick = vm::save, enabled = selected > 0 && invalid == 0 && state.title.isNotBlank(), modifier = Modifier.fillMaxWidth()) {
-                                Text("确认新建题库（$selected 题）")
+                            Text(if (invalid > 0) "$invalid 道待完善也可一起新建，之后在题库中编辑" else "可直接保存全部选中题目", style = MaterialTheme.typography.bodySmall)
+                            Button(onClick = vm::save, enabled = selected > 0, modifier = Modifier.fillMaxWidth()) {
+                                Text("新建题库（$selected 题）")
                             }
                         }
                     }
@@ -140,7 +140,7 @@ fun PdfImportScreen(app: NailongApp, settings: AppSettings, nav: NavHostControll
 }
 
 @Composable
-private fun QuestionEditor(question: QuestionJson, onDismiss: () -> Unit, onSave: (QuestionJson) -> Unit) {
+internal fun QuestionEditor(question: QuestionJson, onDismiss: () -> Unit, onSave: (QuestionJson) -> Unit, saving: Boolean = false) {
     var type by remember(question.id) { mutableStateOf(QuestionType.from(question.type)) }
     var stem by remember(question.id) { mutableStateOf(question.stem) }
     var options by remember(question.id) { mutableStateOf(question.options.joinToString("\n") { "${it.label}. ${it.text.replace('\n', ' ')}" }) }
@@ -168,6 +168,6 @@ private fun QuestionEditor(question: QuestionJson, onDismiss: () -> Unit, onSave
             }) }, modifier = Modifier.fillMaxWidth(), minLines = if (type == QuestionType.ESSAY) 3 else 1)
             problems.forEach { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
         }
-    }, confirmButton = { TextButton(onClick = { onSave(edited) }) { Text("保存修改") } },
+    }, confirmButton = { TextButton(onClick = { onSave(edited) }, enabled = !saving) { Text(if (saving) "保存中…" else "保存修改") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } })
 }
